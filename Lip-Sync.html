@@ -1,0 +1,973 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Lip Sync — Full Viseme Coverage</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Baloo+2:wght@400;600;800&family=Fira+Mono:wght@400;500&display=swap');
+
+  :root {
+    --bg: #0e1520;
+    --surface: #151e2e;
+    --accent: #4fc3f7;
+    --accent2: #ff8a65;
+    --text: #e8f0fe;
+    --muted: rgba(255,255,255,0.3);
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    font-family: 'Baloo 2', sans-serif;
+    color: var(--text);
+    overflow: hidden;
+  }
+
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image:
+      linear-gradient(rgba(79,195,247,0.04) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(79,195,247,0.04) 1px, transparent 1px);
+    background-size: 40px 40px;
+    pointer-events: none;
+  }
+
+  .layout {
+    display: grid;
+    grid-template-columns: 240px 1fr;
+    gap: 36px;
+    align-items: center;
+    max-width: 860px;
+    width: 100%;
+    padding: 24px;
+  }
+
+  .char-col {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 14px;
+  }
+
+  .character-wrap {
+    filter: drop-shadow(0 16px 40px rgba(79,195,247,0.18));
+    animation: float 4s ease-in-out infinite;
+  }
+  @keyframes float {
+    0%,100% { transform: translateY(0); }
+    50% { transform: translateY(-8px); }
+  }
+
+  .word-display {
+    font-size: 1.7rem;
+    font-weight: 800;
+    text-align: center;
+    color: var(--accent);
+    min-height: 2.2rem;
+    letter-spacing: 0.04em;
+    text-shadow: 0 0 20px rgba(79,195,247,0.4);
+  }
+
+  .btn {
+    padding: 11px 30px;
+    background: linear-gradient(135deg, var(--accent), #0288d1);
+    color: #fff;
+    font-family: 'Baloo 2', sans-serif;
+    font-size: 0.95rem;
+    font-weight: 800;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    border: none;
+    border-radius: 50px;
+    cursor: pointer;
+    box-shadow: 0 4px 20px rgba(79,195,247,0.35);
+    transition: transform 0.15s, box-shadow 0.15s;
+  }
+  .btn:hover { transform: translateY(-2px); box-shadow: 0 8px 28px rgba(79,195,247,0.5); }
+  .btn:active { transform: scale(0.97); }
+  .btn:disabled { opacity: 0.6; cursor: default; transform: none; }
+
+  .panel-col {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .panel-title {
+    font-size: 0.68rem;
+    font-weight: 600;
+    letter-spacing: 0.25em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 2px;
+  }
+
+  .viseme-grid {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 7px;
+  }
+
+  .v-card {
+    background: var(--surface);
+    border: 1.5px solid rgba(255,255,255,0.06);
+    border-radius: 11px;
+    padding: 9px 5px 7px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 5px;
+    transition: border-color 0.1s, box-shadow 0.1s, transform 0.1s;
+  }
+  .v-card.active {
+    border-color: var(--accent);
+    box-shadow: 0 0 14px rgba(79,195,247,0.4);
+    transform: scale(1.07);
+  }
+
+  .v-name {
+    font-size: 0.68rem;
+    font-weight: 800;
+    color: var(--text);
+    text-align: center;
+    letter-spacing: 0.04em;
+  }
+  .v-card.active .v-name { color: var(--accent); }
+
+  .v-label {
+    font-family: 'Fira Mono', monospace;
+    font-size: 0.58rem;
+    color: var(--muted);
+    text-align: center;
+    line-height: 1.3;
+  }
+
+  .ticker {
+    background: var(--surface);
+    border: 1.5px solid rgba(255,255,255,0.06);
+    border-radius: 10px;
+    padding: 9px 14px;
+    font-family: 'Fira Mono', monospace;
+    font-size: 0.78rem;
+    color: var(--muted);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    min-height: 40px;
+  }
+  .ticker-label { font-size: 0.62rem; letter-spacing: 0.15em; text-transform: uppercase; white-space: nowrap; }
+  .ticker-phone { color: var(--accent2); font-weight: 500; font-size: 1rem; }
+  .ticker-vis { color: var(--accent); }
+
+  .progress-wrap {
+    background: rgba(255,255,255,0.06);
+    border-radius: 4px;
+    height: 4px;
+    overflow: hidden;
+    width: 200px;
+  }
+  .progress-bar {
+    height: 100%;
+    background: linear-gradient(90deg, var(--accent), var(--accent2));
+    width: 0%;
+    border-radius: 4px;
+  }
+
+  /* ── Audio upload zone ── */
+  .upload-zone {
+    width: 200px;
+    border: 1.5px dashed rgba(79,195,247,0.3);
+    border-radius: 12px;
+    padding: 12px 10px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+    cursor: pointer;
+    transition: border-color 0.2s, background 0.2s;
+    background: rgba(79,195,247,0.04);
+    position: relative;
+  }
+  .upload-zone:hover, .upload-zone.drag-over {
+    border-color: var(--accent);
+    background: rgba(79,195,247,0.10);
+  }
+  .upload-zone input[type=file] {
+    position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; height: 100%;
+  }
+  .upload-icon { font-size: 1.4rem; line-height: 1; }
+  .upload-label {
+    font-size: 0.72rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    color: var(--muted);
+    text-align: center;
+    text-transform: uppercase;
+  }
+  .upload-zone.has-file .upload-label { color: var(--accent); }
+  .upload-fname {
+    font-family: 'Fira Mono', monospace;
+    font-size: 0.65rem;
+    color: var(--accent2);
+    text-align: center;
+    max-width: 180px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    display: none;
+  }
+  .upload-zone.has-file .upload-fname { display: block; }
+
+  /* hidden native audio element */
+  #audioEl { display: none; }
+</style>
+</head>
+<body>
+<div class="layout">
+
+  <!-- ── CHARACTER COLUMN ── -->
+  <div class="char-col">
+    <div class="character-wrap">
+      <svg id="face" width="200" height="245" viewBox="0 0 200 245" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <!-- Skin -->
+          <radialGradient id="sg" cx="45%" cy="32%" r="65%">
+            <stop offset="0%" stop-color="#FFE0C0"/>
+            <stop offset="70%" stop-color="#F0A870"/>
+            <stop offset="100%" stop-color="#D8855A"/>
+          </radialGradient>
+          <!-- Skin shadow (inside face, bottom) -->
+          <radialGradient id="sgs" cx="50%" cy="90%" r="50%">
+            <stop offset="0%" stop-color="rgba(160,80,30,0.25)"/>
+            <stop offset="100%" stop-color="rgba(160,80,30,0)"/>
+          </radialGradient>
+          <!-- Hair -->
+          <linearGradient id="hg" x1="0%" y1="0%" x2="60%" y2="100%">
+            <stop offset="0%" stop-color="#8B5CF6"/>
+            <stop offset="100%" stop-color="#1E0A4A"/>
+          </linearGradient>
+          <!-- Iris -->
+          <radialGradient id="ig" cx="35%" cy="30%" r="65%">
+            <stop offset="0%" stop-color="#93D5F0"/>
+            <stop offset="60%" stop-color="#2980B9"/>
+            <stop offset="100%" stop-color="#0A3050"/>
+          </radialGradient>
+          <!-- Lip base -->
+          <linearGradient id="lipG" x1="0%" y1="0%" x2="0%" y2="100%">
+            <stop offset="0%" stop-color="#E8607A"/>
+            <stop offset="100%" stop-color="#A83050"/>
+          </linearGradient>
+          <!-- Lip lower highlight -->
+          <radialGradient id="lipHL" cx="50%" cy="30%" r="60%">
+            <stop offset="0%" stop-color="rgba(255,180,190,0.6)"/>
+            <stop offset="100%" stop-color="rgba(255,180,190,0)"/>
+          </radialGradient>
+          <!-- Mouth interior -->
+          <radialGradient id="mouthBG" cx="50%" cy="0%" r="80%">
+            <stop offset="0%" stop-color="#3A0818"/>
+            <stop offset="100%" stop-color="#1A0208"/>
+          </radialGradient>
+          <!-- Blush -->
+          <radialGradient id="blushG" cx="50%" cy="50%" r="50%">
+            <stop offset="0%" stop-color="rgba(255,100,100,0.45)"/>
+            <stop offset="100%" stop-color="rgba(255,100,100,0)"/>
+          </radialGradient>
+          <!-- Clip for face interior elements -->
+          <clipPath id="faceClip">
+            <ellipse cx="100" cy="128" rx="80" ry="92"/>
+          </clipPath>
+          <!-- Clip mouth interior to lip outline -->
+          <clipPath id="mouthClip">
+            <path id="mouthClipPath" d="M0,0"/>
+          </clipPath>
+        </defs>
+
+        <!-- ═══ HAIR BACK ═══ -->
+        <ellipse cx="100" cy="100" rx="84" ry="88" fill="url(#hg)"/>
+        <!-- Hair volume sides -->
+        <path d="M16,100 Q10,60 28,40 Q50,20 100,18 Q150,20 172,40 Q190,60 184,100" fill="url(#hg)"/>
+
+        <!-- ═══ NECK ═══ -->
+        <path d="M82,215 Q82,235 90,238 L110,238 Q118,235 118,215Z" fill="url(#sg)"/>
+        <!-- neck shadow -->
+        <path d="M88,215 Q88,228 100,230 Q112,228 112,215Z" fill="rgba(160,80,30,0.2)"/>
+
+        <!-- ═══ FACE ═══ -->
+        <ellipse cx="100" cy="128" rx="80" ry="92" fill="url(#sg)"/>
+        <!-- subtle lighting overlay -->
+        <ellipse cx="100" cy="128" rx="80" ry="92" fill="url(#sgs)"/>
+
+        <!-- ═══ EARS ═══ -->
+        <ellipse cx="20" cy="130" rx="12" ry="15" fill="#E89060"/>
+        <ellipse cx="20" cy="130" rx="6.5" ry="8.5" fill="#D07848" opacity="0.55"/>
+        <ellipse cx="180" cy="130" rx="12" ry="15" fill="#E89060"/>
+        <ellipse cx="180" cy="130" rx="6.5" ry="8.5" fill="#D07848" opacity="0.55"/>
+
+        <!-- ═══ HAIR FRONT ═══ -->
+        <path d="M16,100 Q20,30 100,22 Q180,30 184,100 Q165,50 100,52 Q35,50 16,100Z" fill="url(#hg)"/>
+        <!-- side swoops -->
+        <path d="M16,100 Q18,75 30,58 Q34,78 24,96Z" fill="url(#hg)"/>
+        <path d="M184,100 Q182,75 170,58 Q166,78 176,96Z" fill="url(#hg)"/>
+        <!-- hair sheen -->
+        <path d="M50,36 Q85,22 120,28" fill="none" stroke="rgba(210,180,255,0.22)" stroke-width="9" stroke-linecap="round"/>
+        <path d="M62,30 Q90,20 110,24" fill="none" stroke="rgba(255,255,255,0.08)" stroke-width="4" stroke-linecap="round"/>
+
+        <!-- ═══ BLUSH ═══ -->
+        <ellipse id="blushL" cx="48" cy="152" rx="22" ry="13" fill="url(#blushG)" opacity="0.15"/>
+        <ellipse id="blushR" cx="152" cy="152" rx="22" ry="13" fill="url(#blushG)" opacity="0.15"/>
+
+        <!-- ═══ LEFT EYE ═══ -->
+        <g id="eyeL" transform="translate(65,116)">
+          <!-- brow -->
+          <path id="browL" d="M-19,-21 Q-2,-30 19,-21" fill="none" stroke="#3D1070" stroke-width="5" stroke-linecap="round"/>
+          <!-- white -->
+          <ellipse cx="0" cy="0" rx="19" ry="13" fill="#F8F4F0"/>
+          <!-- shadow inside eye -->
+          <ellipse cx="0" cy="4" rx="19" ry="9" fill="rgba(180,130,100,0.12)"/>
+          <!-- iris -->
+          <circle cx="0" cy="0" r="10" fill="url(#ig)"/>
+          <!-- pupil -->
+          <circle cx="0" cy="0" r="5.5" fill="#060210"/>
+          <!-- shine 1 -->
+          <circle cx="-3.5" cy="-3.5" r="2.8" fill="white" opacity="0.95"/>
+          <!-- shine 2 -->
+          <circle cx="4" cy="3" r="1.4" fill="white" opacity="0.45"/>
+          <!-- upper eyelid crease -->
+          <path d="M-19,-4 Q0,-10 19,-4" fill="none" stroke="rgba(180,120,80,0.18)" stroke-width="1.5"/>
+          <!-- eyelid (blink) -->
+          <ellipse id="lidL" cx="0" cy="-13" rx="19" ry="0.5" fill="#E89060"/>
+          <!-- upper lashes -->
+          <path d="M-17,-9 L-22,-16  M-10,-12 L-12,-20  M-1,-13 L-1,-22  M8,-12 L10,-20  M16,-9 L21,-16"
+                stroke="#1A0840" stroke-width="2.2" stroke-linecap="round"/>
+          <!-- lower lashes (subtle) -->
+          <path d="M-15,9 L-17,14  M-5,11 L-5,16  M6,11 L6,16  M14,9 L16,14"
+                stroke="#1A0840" stroke-width="1.5" stroke-linecap="round" opacity="0.5"/>
+        </g>
+
+        <!-- ═══ RIGHT EYE ═══ -->
+        <g id="eyeR" transform="translate(135,116)">
+          <path id="browR" d="M-19,-21 Q2,-30 19,-21" fill="none" stroke="#3D1070" stroke-width="5" stroke-linecap="round"/>
+          <ellipse cx="0" cy="0" rx="19" ry="13" fill="#F8F4F0"/>
+          <ellipse cx="0" cy="4" rx="19" ry="9" fill="rgba(180,130,100,0.12)"/>
+          <circle cx="0" cy="0" r="10" fill="url(#ig)"/>
+          <circle cx="0" cy="0" r="5.5" fill="#060210"/>
+          <circle cx="-3.5" cy="-3.5" r="2.8" fill="white" opacity="0.95"/>
+          <circle cx="4" cy="3" r="1.4" fill="white" opacity="0.45"/>
+          <path d="M-19,-4 Q0,-10 19,-4" fill="none" stroke="rgba(180,120,80,0.18)" stroke-width="1.5"/>
+          <ellipse id="lidR" cx="0" cy="-13" rx="19" ry="0.5" fill="#E89060"/>
+          <path d="M-17,-9 L-22,-16  M-10,-12 L-12,-20  M-1,-13 L-1,-22  M8,-12 L10,-20  M16,-9 L21,-16"
+                stroke="#1A0840" stroke-width="2.2" stroke-linecap="round"/>
+          <path d="M-15,9 L-17,14  M-5,11 L-5,16  M6,11 L6,16  M14,9 L16,14"
+                stroke="#1A0840" stroke-width="1.5" stroke-linecap="round" opacity="0.5"/>
+        </g>
+
+        <!-- ═══ NOSE ═══ -->
+        <path d="M100,148 Q94,164 96,170 Q100,174 104,170 Q106,164 100,148" fill="none" stroke="#C06A38" stroke-width="2.2" stroke-linecap="round"/>
+        <!-- nostrils -->
+        <ellipse cx="94" cy="170" rx="5" ry="3.5" fill="rgba(160,80,40,0.22)"/>
+        <ellipse cx="106" cy="170" rx="5" ry="3.5" fill="rgba(160,80,40,0.22)"/>
+        <!-- nose bridge highlight -->
+        <path d="M100,148 Q102,156 101,164" fill="none" stroke="rgba(255,220,180,0.3)" stroke-width="2" stroke-linecap="round"/>
+
+        <!-- ═══ MOUTH ═══ -->
+        <!--
+          ARCHITECTURE:
+          1. mouthInterior — dark fill, clipped to lip outline shape
+          2. mTeeth        — white teeth bar, clipped to mouth interior
+          3. mTongue       — tongue ellipse, inside cavity
+          4. mLipOutline   — the single closed lip path (upper+lower as one), filled with lip color
+          5. mCupidBow     — upper lip dark line / cupid's bow detail
+          6. mLipHighlight — gloss on lower lip
+
+          The lip outline path uses a standard anatomy:
+            - Start at left corner (L corner)
+            - Upper lip: arc up to left peak, dip to center philtrum, up to right peak, arc down to R corner
+            - Lower lip: arc down to bottom, back to L corner
+          All controlled with a single [x0..x7, yTop, yBot, yPeak, yDip, yCorner] param set per viseme.
+        -->
+        <g id="mouthGroup" transform="translate(100,195)">
+          <!-- Interior (dark) — rendered behind lip fill, clipped by lip outline -->
+          <path id="mInterior" d="M0,0" fill="url(#mouthBG)"/>
+          <!-- Teeth upper -->
+          <path id="mTeeth" d="M0,0" fill="white" opacity="0"/>
+          <!-- Tongue -->
+          <ellipse id="mTongue" cx="0" cy="8" rx="11" ry="6.5" fill="#CC5065" opacity="0"/>
+          <!-- Lip filled shape (full outline, cupid's bow included) -->
+          <path id="mLip" d="M0,0" fill="url(#lipG)" stroke="rgba(120,20,40,0.3)" stroke-width="0.8"/>
+          <!-- Philtrum dip line (upper only) -->
+          <path id="mPhiltrum" d="M0,0" fill="rgba(120,20,50,0.35)"/>
+          <!-- Lower lip highlight (gloss) -->
+          <ellipse id="mGloss" cx="0" cy="5" rx="9" ry="4" fill="url(#lipHL)" opacity="0.7"/>
+          <!-- Corner shadows -->
+          <circle id="mCornerL" cx="-24" cy="0" r="3" fill="rgba(100,20,30,0.35)" opacity="0"/>
+          <circle id="mCornerR" cx="24" cy="0" r="3" fill="rgba(100,20,30,0.35)" opacity="0"/>
+        </g>
+
+        <!-- face rim light -->
+        <ellipse cx="100" cy="128" rx="80" ry="92" fill="none" stroke="rgba(255,200,150,0.07)" stroke-width="2"/>
+        <!-- chin highlight -->
+        <ellipse cx="100" cy="217" rx="24" ry="6" fill="white" opacity="0.07"/>
+      </svg>
+    </div>
+
+    <div class="word-display" id="wordDisp">● ● ●</div>
+    <div class="progress-wrap">
+      <div class="progress-bar" id="progBar"></div>
+    </div>
+
+    <!-- Audio upload -->
+    <div class="upload-zone" id="uploadZone">
+      <input type="file" id="audioFile" accept="audio/*"/>
+      <div class="upload-icon">🎵</div>
+      <div class="upload-label" id="uploadLabel">Drop audio file</div>
+      <div class="upload-fname" id="uploadFname"></div>
+    </div>
+
+    <audio id="audioEl"></audio>
+    <button class="btn" id="playBtn" onclick="run()">▶ PLAY</button>
+  </div>
+
+  <!-- ── PANEL COLUMN ── -->
+  <div class="panel-col">
+    <div class="panel-title">Viseme Reference — All 10 Classes</div>
+    <div class="viseme-grid" id="visGrid"></div>
+    <div class="ticker">
+      <span class="ticker-label">Phone</span>
+      <span class="ticker-phone" id="tPhone">—</span>
+      <span class="ticker-label" style="margin-left:8px">Viseme</span>
+      <span class="ticker-vis" id="tVis">—</span>
+    </div>
+  </div>
+
+</div><!-- .layout -->
+
+<script>
+// ═══════════════════════════════════════════════════════════════
+//  MOUTH PATH BUILDER
+//  All mouth shapes are generated from a small parameter set.
+//  This ensures they are always anatomically valid closed paths.
+//
+//  Parameters (all Y values are relative to the corner baseline y=0):
+//    W      — half-width of mouth at corners
+//    yU     — how high the upper lip peak rises  (negative = up)
+//    yUdip  — how deep the cupid's bow dip goes  (negative = up, less than yU)
+//    yL     — how low the lower lip drops         (positive = down)
+//    yCorner— corner vertical offset (+ = drooping, - = smiling)
+//    squeeze— horizontal scale of the whole mouth (1=normal, <1=pursed)
+// ═══════════════════════════════════════════════════════════════
+
+function buildMouthPath({ W, yU, yUdip, yL, yCorner, squeeze }) {
+  // Apply squeeze (pursing) — scale X only
+  const s = squeeze;
+  const lx = -W * s;  // left corner x
+  const rx =  W * s;  // right corner x
+  const cy = yCorner; // corner y
+
+  // Cupid's bow control points
+  const pk = 0.45;    // peak x fraction from center
+  const lpx = -W * s * pk;
+  const rpx =  W * s * pk;
+
+  // Upper lip path (left corner → left peak → center dip → right peak → right corner)
+  // Using cubic bezier for smooth cupid's bow
+  // Lower lip (right corner → bottom → left corner)
+
+  const upperPath =
+    `M${lx.toFixed(1)},${cy.toFixed(1)} ` +
+    `C${(lx*0.6).toFixed(1)},${(cy+yU*0.4).toFixed(1)} ${(lpx*1.1).toFixed(1)},${yU.toFixed(1)} ${lpx.toFixed(1)},${yU.toFixed(1)} ` +
+    `C${(lpx*0.5).toFixed(1)},${(yU*0.85).toFixed(1)} ${(-W*s*0.08).toFixed(1)},${yUdip.toFixed(1)} 0,${yUdip.toFixed(1)} ` +
+    `C${(W*s*0.08).toFixed(1)},${yUdip.toFixed(1)} ${(rpx*0.5).toFixed(1)},${(yU*0.85).toFixed(1)} ${rpx.toFixed(1)},${yU.toFixed(1)} ` +
+    `C${(rpx*1.1).toFixed(1)},${yU.toFixed(1)} ${(rx*0.6).toFixed(1)},${(cy+yU*0.4).toFixed(1)} ${rx.toFixed(1)},${cy.toFixed(1)}`;
+
+  const lowerPath =
+    `C${(rx*0.7).toFixed(1)},${(cy+yL*0.5).toFixed(1)} ${(rx*0.3).toFixed(1)},${yL.toFixed(1)} 0,${yL.toFixed(1)} ` +
+    `C${(lx*0.3).toFixed(1)},${yL.toFixed(1)} ${(lx*0.7).toFixed(1)},${(cy+yL*0.5).toFixed(1)} ${lx.toFixed(1)},${cy.toFixed(1)} Z`;
+
+  return upperPath + ' ' + lowerPath;
+}
+
+// Interior (opening) — simpler elliptical fill clipped inside lip
+function buildInteriorPath({ W, yU, yUdip, yL, yCorner, squeeze }) {
+  const s = squeeze;
+  const iw = W * s * 0.82;
+  const iy_top = yUdip + (yU - yUdip) * 0.15;  // just inside upper lip
+  const iy_bot = yL * 0.82;
+  // Simple rounded rect-ish path for interior
+  return `M${(-iw).toFixed(1)},${yCorner.toFixed(1)} C${(-iw*0.6).toFixed(1)},${iy_top.toFixed(1)} ${(-iw*0.2).toFixed(1)},${(iy_top*0.9).toFixed(1)} 0,${iy_top.toFixed(1)} C${(iw*0.2).toFixed(1)},${(iy_top*0.9).toFixed(1)} ${(iw*0.6).toFixed(1)},${iy_top.toFixed(1)} ${iw.toFixed(1)},${yCorner.toFixed(1)} C${(iw*0.8).toFixed(1)},${(iy_bot*0.6).toFixed(1)} ${(iw*0.3).toFixed(1)},${iy_bot.toFixed(1)} 0,${iy_bot.toFixed(1)} C${(-iw*0.3).toFixed(1)},${iy_bot.toFixed(1)} ${(-iw*0.8).toFixed(1)},${(iy_bot*0.6).toFixed(1)} ${(-iw).toFixed(1)},${yCorner.toFixed(1)} Z`;
+}
+
+// Teeth bar — a rounded rect inside the opening
+function buildTeethPath({ W, yU, yUdip, yL, yCorner, squeeze }) {
+  const s = squeeze;
+  const tw = W * s * 0.72;
+  const ty1 = yCorner + 0.5;
+  const ty2 = Math.min(yL * 0.42, ty1 + 7);
+  if (ty2 <= ty1) return 'M0,0';
+  return `M${(-tw).toFixed(1)},${ty1.toFixed(1)} Q0,${(ty1-1).toFixed(1)} ${tw.toFixed(1)},${ty1.toFixed(1)} L${tw.toFixed(1)},${ty2.toFixed(1)} Q0,${(ty2+1).toFixed(1)} ${(-tw).toFixed(1)},${ty2.toFixed(1)} Z`;
+}
+
+// Philtrum shadow dip (small filled shape at top center of upper lip)
+function buildPhiltrumPath({ W, yU, yUdip, squeeze }) {
+  const s = squeeze;
+  const pw = W * s * 0.2;
+  return `M${(-pw).toFixed(1)},${(yUdip-0.5).toFixed(1)} Q0,${(yU*0.7).toFixed(1)} ${pw.toFixed(1)},${(yUdip-0.5).toFixed(1)} Q0,${yUdip.toFixed(1)} ${(-pw).toFixed(1)},${(yUdip-0.5).toFixed(1)}Z`;
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  VISEME PARAMETER TABLE
+//  W=half-width, yU=upper peak (neg=up), yUdip=cupid dip (neg),
+//  yL=lower drop (pos=down), yCorner=corner offset, squeeze=pursing
+//  teethO=teeth opacity, tongueO=tongue opacity, tongCY=tongue Y
+// ═══════════════════════════════════════════════════════════════
+const VISEMES = {
+  //  1. Open vowels — mouth wide open, jaw dropped
+  'aei': {
+    name:'Open Vowel', phones:'a · e · ə · ʌ · æ',
+    W:24, yU:-11, yUdip:-7, yL:14, yCorner:1, squeeze:1.0,
+    interiorO:0.97, teethO:0.85, tongueO:0.3, tongCY:11, glossCY:7, glossRX:10, glossRY:4,
+    cornerO:0.5,
+  },
+  //  2. Rounded vowels — pursed circle, jaw slightly open
+  'o': {
+    name:'Rounded', phones:'o · ʊ · oʊ · uː',
+    W:14, yU:-13, yUdip:-9, yL:13, yCorner:0, squeeze:0.75,
+    interiorO:0.95, teethO:0, tongueO:0.1, tongCY:9, glossCY:6, glossRX:6, glossRY:3,
+    cornerO:0.3,
+  },
+  //  3. Front/EE vowels — wide smile, mouth slightly open, teeth prominent
+  'ee': {
+    name:'Front / EE', phones:'i · ɪ · eɪ',
+    W:27, yU:-9, yUdip:-6, yL:8, yCorner:-3, squeeze:1.08,
+    interiorO:0.88, teethO:0.95, tongueO:0.05, tongCY:6, glossCY:4, glossRX:11, glossRY:3,
+    cornerO:0.6,
+  },
+  //  4. Bilabial — lips fully pressed, zero gap
+  'bmp': {
+    name:'Bilabial', phones:'b · m · p',
+    W:23, yU:-4, yUdip:-2.5, yL:4, yCorner:1, squeeze:1.0,
+    interiorO:0, teethO:0, tongueO:0, tongCY:2, glossCY:2, glossRX:9, glossRY:2.5,
+    cornerO:0.2,
+  },
+  //  5. Labiodental — lower lip tucked, teeth bite lower lip
+  'fv': {
+    name:'Labiodental', phones:'f · v',
+    W:22, yU:-5, yUdip:-3, yL:2, yCorner:0.5, squeeze:0.95,
+    interiorO:0.15, teethO:0.75, tongueO:0, tongCY:2, glossCY:1, glossRX:8, glossRY:2,
+    cornerO:0.2,
+    lowerLipTuck: true,  // flag for special lower lip
+  },
+  //  6. Lateral L — mid-open, tongue raised behind teeth
+  'l': {
+    name:'Lateral', phones:'l',
+    W:22, yU:-8, yUdip:-5, yL:9, yCorner:0, squeeze:0.98,
+    interiorO:0.88, teethO:0.7, tongueO:0.8, tongCY:7, glossCY:5, glossRX:9, glossRY:3.5,
+    cornerO:0.3,
+  },
+  //  7. Rhotic R — lightly pursed, tongue bunched
+  'r': {
+    name:'Rhotic', phones:'r · ɝ · ɚ',
+    W:18, yU:-9, yUdip:-6, yL:10, yCorner:0.5, squeeze:0.85,
+    interiorO:0.90, teethO:0.15, tongueO:0.7, tongCY:8, glossCY:5, glossRX:7, glossRY:3,
+    cornerO:0.3,
+  },
+  //  8. Dental TH — slight open, tongue tip pokes forward
+  'th': {
+    name:'Dental', phones:'θ · ð',
+    W:21, yU:-6, yUdip:-4, yL:6, yCorner:0.5, squeeze:0.95,
+    interiorO:0.75, teethO:0.7, tongueO:0.9, tongCY:3, glossCY:3, glossRX:8, glossRY:2.5,
+    cornerO:0.2,
+  },
+  //  9. Rounded W — very tight pucker, tighter than /o/
+  'qw': {
+    name:'Rounded W', phones:'w · ʍ',
+    W:10, yU:-12, yUdip:-8, yL:12, yCorner:0, squeeze:0.7,
+    interiorO:0.92, teethO:0, tongueO:0, tongCY:8, glossCY:6, glossRX:4, glossRY:2.5,
+    cornerO:0.15,
+  },
+  //  10. Alveolar / velar — near-closed, minimal gap
+  'cdgknstxyz': {
+    name:'Alveolar', phones:'c·d·g·k·n·s·t·z',
+    W:22, yU:-5, yUdip:-3, yL:5, yCorner:0.5, squeeze:0.97,
+    interiorO:0.6, teethO:0.5, tongueO:0, tongCY:3, glossCY:3, glossRX:8, glossRY:2.5,
+    cornerO:0.2,
+  },
+  //  REST
+  'rest': {
+    name:'Rest', phones:'—',
+    W:22, yU:-6, yUdip:-4, yL:5, yCorner:1, squeeze:1.0,
+    interiorO:0, teethO:0, tongueO:0, tongCY:3, glossCY:3, glossRX:8, glossRY:2.5,
+    cornerO:0,
+  },
+};
+
+// ═══════════════════════════════════════════════════════════════
+//  INPUT DATA — paste any timestampInfo JSON here
+//  The engine reads words, wordStartTimeSeconds, wordEndTimeSeconds
+//  and phoneticDetails[].phones[].{phoneSymbol, startTimeSeconds,
+//  durationSeconds, visemeSymbol} directly from this object.
+// ═══════════════════════════════════════════════════════════════
+const INPUT = {
+  "timestampInfo": {
+    "wordAlignment": {
+      "words": ["Hello,", "world,", "this", "will", "be", "saved"],
+      "wordStartTimeSeconds": [0, 0.28, 0.96, 1.25, 1.38, 1.5],
+      "wordEndTimeSeconds":   [0.28, 0.8, 1.25, 1.38, 1.5, 1.99],
+      "phoneticDetails": [
+        {
+          "wordIndex": 0, "isPartial": false,
+          "phones": [
+            {"phoneSymbol": "h",   "startTimeSeconds": 0,    "durationSeconds": 0.07,        "visemeSymbol": "aei"},
+            {"phoneSymbol": "ə",   "startTimeSeconds": 0.07, "durationSeconds": 0.030000001, "visemeSymbol": "aei"},
+            {"phoneSymbol": "l",   "startTimeSeconds": 0.1,  "durationSeconds": 0.089999996, "visemeSymbol": "l"},
+            {"phoneSymbol": "oʊ1", "startTimeSeconds": 0.19, "durationSeconds": 0.09,        "visemeSymbol": "o"}
+          ]
+        },
+        {
+          "wordIndex": 1, "isPartial": false,
+          "phones": [
+            {"phoneSymbol": "w",  "startTimeSeconds": 0.28, "durationSeconds": 0.18,        "visemeSymbol": "qw"},
+            {"phoneSymbol": "ɝ1", "startTimeSeconds": 0.46, "durationSeconds": 0.119999975, "visemeSymbol": "r"},
+            {"phoneSymbol": "l",  "startTimeSeconds": 0.58, "durationSeconds": 0.08000004,  "visemeSymbol": "l"},
+            {"phoneSymbol": "d",  "startTimeSeconds": 0.66, "durationSeconds": 0.13999999,  "visemeSymbol": "cdgknstxyz"}
+          ]
+        },
+        {
+          "wordIndex": 2, "isPartial": false,
+          "phones": [
+            {"phoneSymbol": "ð",  "startTimeSeconds": 0.96, "durationSeconds": 0.14000005, "visemeSymbol": "th"},
+            {"phoneSymbol": "ɪ1", "startTimeSeconds": 1.1,  "durationSeconds": 0.06999993, "visemeSymbol": "ee"},
+            {"phoneSymbol": "s",  "startTimeSeconds": 1.17, "durationSeconds": 0.08000004, "visemeSymbol": "cdgknstxyz"}
+          ]
+        }
+      ]
+    }
+  }
+};
+
+// ── Parse timestampInfo into flat arrays the engine uses ──
+//
+//  Also handles words with missing phoneticDetails by synthesising
+//  a simple open-vowel pulse from the word's timing window.
+//  This ensures mouth motion for ALL words, even if the TTS only
+//  returned partial phonetic data (as in the sample JSON).
+// ─────────────────────────────────────────────────────────────
+function parseTimestampInfo(input) {
+  const wa = input.timestampInfo.wordAlignment;
+  const words     = wa.words;
+  const wordStart = wa.wordStartTimeSeconds;
+  const wordEnd   = wa.wordEndTimeSeconds;
+
+  // Build a set of which wordIndexes have real phone data
+  const coveredWords = new Set(wa.phoneticDetails.map(d => d.wordIndex));
+
+  // Flatten real phones
+  const realPhones = wa.phoneticDetails
+    .flatMap(wd => wd.phones.map(p => ({
+      symbol: p.phoneSymbol,
+      viseme: p.visemeSymbol,
+      start:  p.startTimeSeconds,
+      end:    p.startTimeSeconds + p.durationSeconds,
+      synth:  false,
+    })));
+
+  // For each word with NO phone data, synthesise pulses:
+  //   open vowel for 60% of word duration, then near-closed for 20%, then rest
+  const synthPhones = [];
+  words.forEach((word, i) => {
+    if (coveredWords.has(i)) return;
+    const wStart = wordStart[i];
+    const wEnd   = wordEnd[i];
+    const dur    = wEnd - wStart;
+    if (dur <= 0) return;
+
+    // Guess a rough viseme sequence from the word's first letter
+    const firstChar = word.replace(/[^a-zA-Z]/g, '')[0] || 'a';
+    const openViseme = /^[aeiouAEIOU]/.test(firstChar) ? 'aei' :
+                       /^[wW]/.test(firstChar)          ? 'qw'  :
+                       /^[bmpBMP]/.test(firstChar)      ? 'bmp' :
+                       /^[fvFV]/.test(firstChar)        ? 'fv'  :
+                       /^[lL]/.test(firstChar)          ? 'l'   :
+                       /^[rR]/.test(firstChar)          ? 'r'   : 'aei';
+
+    // pulse: open → aei → closed → rest
+    synthPhones.push({ symbol: '~', viseme: openViseme,      start: wStart,           end: wStart + dur * 0.25, synth: true });
+    synthPhones.push({ symbol: '~', viseme: 'aei',           start: wStart + dur*0.25,end: wStart + dur * 0.65, synth: true });
+    synthPhones.push({ symbol: '~', viseme: 'cdgknstxyz',    start: wStart + dur*0.65,end: wStart + dur * 0.85, synth: true });
+  });
+
+  const phones = [...realPhones, ...synthPhones]
+    .sort((a, b) => a.start - b.start);
+
+  // Total duration = last word end + small tail
+  const lastWordEnd = Math.max(...wordEnd);
+  const lastPhone   = phones[phones.length - 1];
+  const total = Math.max(lastWordEnd, lastPhone ? lastPhone.end : 0) + 0.5;
+
+  return { words, wordStart, wordEnd, phones, total };
+}
+
+const { words, wordStart, wordEnd, phones, total: TOTAL } = parseTimestampInfo(INPUT);
+
+// ═══════════════════════════════════════════════════════════════
+//  REFERENCE CARD BUILDER  (uses same path builder, smaller scale)
+// ═══════════════════════════════════════════════════════════════
+const visOrder = ['aei','o','ee','bmp','fv','l','r','th','qw','cdgknstxyz'];
+
+function previewSVG(key) {
+  const v = VISEMES[key];
+  const sc = 0.72; // scale down for card
+  const sv = { ...v, W: v.W*sc, yU: v.yU*sc, yUdip: v.yUdip*sc, yL: v.yL*sc, yCorner: v.yCorner*sc };
+  const cx = 22, cy = 22;
+  const lip = buildMouthPath(sv);
+  const interior = buildInteriorPath(sv);
+  const teeth = buildTeethPath(sv);
+  const tongue = v.tongueO > 0.2 ? `<ellipse cx="0" cy="${(sv.tongCY*0.9).toFixed(1)}" rx="${(8*sc).toFixed(1)}" ry="${(5*sc).toFixed(1)}" fill="#CC5065" opacity="${v.tongueO*0.85}"/>` : '';
+
+  return `<svg width="44" height="44" viewBox="0 0 44 44" xmlns="http://www.w3.org/2000/svg">
+    <rect width="44" height="44" rx="8" fill="#080e18"/>
+    <g transform="translate(${cx},${cy})">
+      <path d="${interior}" fill="#1A0208" opacity="${v.interiorO}"/>
+      ${v.teethO > 0.1 ? `<path d="${teeth}" fill="white" opacity="${v.teethO*0.9}"/>` : ''}
+      ${tongue}
+      <path d="${lip}" fill="#D05068" stroke="rgba(100,10,30,0.4)" stroke-width="0.6"/>
+    </g>
+  </svg>`;
+}
+
+// Build cards
+const grid = document.getElementById('visGrid');
+visOrder.forEach(key => {
+  const v = VISEMES[key];
+  const card = document.createElement('div');
+  card.className = 'v-card';
+  card.id = 'vc_' + key;
+  card.innerHTML = `${previewSVG(key)}<div class="v-name">${v.name}</div><div class="v-label">${v.phones}</div>`;
+  grid.appendChild(card);
+});
+
+// ═══════════════════════════════════════════════════════════════
+//  LIVE MOUTH ELEMENTS
+// ═══════════════════════════════════════════════════════════════
+const mLip      = document.getElementById('mLip');
+const mInterior = document.getElementById('mInterior');
+const mTeeth    = document.getElementById('mTeeth');
+const mTongue   = document.getElementById('mTongue');
+const mGloss    = document.getElementById('mGloss');
+const mPhiltrum = document.getElementById('mPhiltrum');
+const mCornerL  = document.getElementById('mCornerL');
+const mCornerR  = document.getElementById('mCornerR');
+const lidL      = document.getElementById('lidL');
+const lidR      = document.getElementById('lidR');
+const browL     = document.getElementById('browL');
+const browR     = document.getElementById('browR');
+const blushL    = document.getElementById('blushL');
+const blushR    = document.getElementById('blushR');
+const wordDisp  = document.getElementById('wordDisp');
+const progBar   = document.getElementById('progBar');
+const tPhone    = document.getElementById('tPhone');
+const tVis      = document.getElementById('tVis');
+
+// ── INTERPOLATED SCALARS ──
+function lerp(a,b,t){ return a+(b-a)*t; }
+
+// We interpolate the raw parameter values and rebuild paths each frame
+let cur = { ...VISEMES.rest, interiorO:0, teethO:0, tongueO:0, cornerO:0 };
+let prevKey = 'rest';
+let activeCard = null;
+
+function lerpParams(a, b, t) {
+  return {
+    W:        lerp(a.W,        b.W,        t),
+    yU:       lerp(a.yU,       b.yU,       t),
+    yUdip:    lerp(a.yUdip,    b.yUdip,    t),
+    yL:       lerp(a.yL,       b.yL,       t),
+    yCorner:  lerp(a.yCorner,  b.yCorner,  t),
+    squeeze:  lerp(a.squeeze,  b.squeeze,  t),
+    interiorO:lerp(a.interiorO,b.interiorO,t),
+    teethO:   lerp(a.teethO,   b.teethO,   t),
+    tongueO:  lerp(a.tongueO,  b.tongueO,  t),
+    tongCY:   lerp(a.tongCY,   b.tongCY,   t),
+    glossCY:  lerp(a.glossCY,  b.glossCY,  t),
+    glossRX:  lerp(a.glossRX,  b.glossRX,  t),
+    glossRY:  lerp(a.glossRY,  b.glossRY,  t),
+    cornerO:  lerp(a.cornerO,  b.cornerO,  t),
+  };
+}
+
+function applyMouth(key) {
+  const target = VISEMES[key];
+  const speed = 0.22;
+  cur = lerpParams(cur, target, speed);
+
+  mLip.setAttribute('d', buildMouthPath(cur));
+  mInterior.setAttribute('d', buildInteriorPath(cur));
+  mInterior.setAttribute('opacity', cur.interiorO);
+
+  const td = buildTeethPath(cur);
+  mTeeth.setAttribute('d', td);
+  mTeeth.setAttribute('opacity', cur.teethO);
+
+  mTongue.setAttribute('cy', cur.tongCY.toFixed(1));
+  mTongue.setAttribute('opacity', cur.tongueO);
+
+  mGloss.setAttribute('cy', cur.glossCY.toFixed(1));
+  mGloss.setAttribute('rx', cur.glossRX.toFixed(1));
+  mGloss.setAttribute('ry', cur.glossRY.toFixed(1));
+
+  mPhiltrum.setAttribute('d', buildPhiltrumPath(cur));
+
+  // Corner shadow dots (pinch at mouth corners for 3D)
+  const cx2 = (cur.W * cur.squeeze).toFixed(1);
+  mCornerL.setAttribute('cx', (-cx2));
+  mCornerR.setAttribute('cx', cx2);
+  mCornerL.setAttribute('cy', cur.yCorner.toFixed(1));
+  mCornerR.setAttribute('cy', cur.yCorner.toFixed(1));
+  mCornerL.setAttribute('opacity', cur.cornerO);
+  mCornerR.setAttribute('opacity', cur.cornerO);
+}
+
+// ── AUDIO + UPLOAD ──
+const audioEl    = document.getElementById('audioEl');
+const audioFile  = document.getElementById('audioFile');
+const uploadZone = document.getElementById('uploadZone');
+const uploadLabel= document.getElementById('uploadLabel');
+const uploadFname= document.getElementById('uploadFname');
+let audioBlobUrl = null;
+let hasAudio = false;
+
+function setAudioFile(file) {
+  if (!file || !file.type.startsWith('audio/')) return;
+  if (audioBlobUrl) URL.revokeObjectURL(audioBlobUrl);
+  audioBlobUrl = URL.createObjectURL(file);
+  audioEl.src = audioBlobUrl;
+  audioEl.load();
+  hasAudio = true;
+  uploadZone.classList.add('has-file');
+  uploadLabel.textContent = 'Audio loaded ✓';
+  uploadFname.textContent = file.name;
+}
+
+audioFile.addEventListener('change', e => setAudioFile(e.target.files[0]));
+
+// Drag-and-drop
+uploadZone.addEventListener('dragover', e => { e.preventDefault(); uploadZone.classList.add('drag-over'); });
+uploadZone.addEventListener('dragleave', () => uploadZone.classList.remove('drag-over'));
+uploadZone.addEventListener('drop', e => {
+  e.preventDefault();
+  uploadZone.classList.remove('drag-over');
+  setAudioFile(e.dataTransfer.files[0]);
+});
+
+// ── BLINK ──
+let blinkTimer;
+function startBlink() {
+  function blink() {
+    const steps = 7, dur = 100;
+    let s = 0;
+    const iv = setInterval(() => {
+      s++;
+      const t = s<=steps/2 ? s/(steps/2) : 1-(s-steps/2)/(steps/2);
+      const ry = t * 13.5, cy = -13 + t * 12.5;
+      lidL.setAttribute('ry', ry); lidL.setAttribute('cy', cy);
+      lidR.setAttribute('ry', ry); lidR.setAttribute('cy', cy);
+      if (s >= steps) clearInterval(iv);
+    }, dur/steps);
+  }
+  blink();
+  blinkTimer = setInterval(() => {
+    blink();
+    if (Math.random() < 0.22) setTimeout(blink, 320);
+  }, 2600 + Math.random()*2000);
+}
+
+// ── RUN ──
+let rafId = null;
+function run() {
+  clearInterval(blinkTimer);
+  startBlink();
+  if (rafId) cancelAnimationFrame(rafId);
+
+  const btn = document.getElementById('playBtn');
+
+  // If audio loaded, sync to it; otherwise fall back to wall-clock timer
+  if (hasAudio) {
+    audioEl.currentTime = 0;
+    audioEl.play();
+  }
+
+  const t0 = performance.now();
+  prevKey = 'rest';
+  btn.textContent = '⏹ PLAYING'; btn.disabled = true;
+
+  function getTime() {
+    // When audio is available use its currentTime for perfect sync
+    return hasAudio ? audioEl.currentTime : (performance.now() - t0) / 1000;
+  }
+
+  function frame() {
+    const s = getTime();
+    const done = hasAudio ? (audioEl.ended || s >= TOTAL) : s >= TOTAL;
+
+    // Progress
+    progBar.style.width = Math.min(s / TOTAL * 100, 100) + '%';
+
+    // Word
+    const wi = wordStart.findIndex((st, j) => s >= st && s < wordEnd[j]);
+    wordDisp.textContent = wi >= 0 ? words[wi] : (done ? '✨' : '');
+
+    // Phone — reads directly from parsed timestampInfo phones
+    const ph = phones.find(x => s >= x.start && s < x.end);
+    const key = ph ? ph.viseme : 'rest';
+    tPhone.textContent = ph ? '[' + ph.symbol + ']' : '—';
+    tVis.textContent   = ph ? ph.viseme : 'rest';
+
+    // Card highlight
+    if (key !== prevKey) {
+      if (activeCard) activeCard.classList.remove('active');
+      const nc = document.getElementById('vc_' + key);
+      if (nc) { nc.classList.add('active'); activeCard = nc; }
+    }
+
+    // Mouth
+    applyMouth(key);
+
+    // Brows
+    const be = (wi >= 0) ? -5 : 0;
+    browL.setAttribute('d', `M-19,${-21+be} Q-2,${-30+be} 19,${-21+be}`);
+    browR.setAttribute('d', `M-19,${-21+be} Q2,${-30+be} 19,${-21+be}`);
+
+    // Blush
+    blushL.setAttribute('opacity', wi >= 0 ? 0.4 : 0.15);
+    blushR.setAttribute('opacity', wi >= 0 ? 0.4 : 0.15);
+
+    prevKey = key;
+
+    if (!done) {
+      rafId = requestAnimationFrame(frame);
+    } else {
+      if (hasAudio) audioEl.pause();
+      applyMouth('rest');
+      progBar.style.width = '100%';
+      wordDisp.textContent = '✨';
+      tPhone.textContent = '—'; tVis.textContent = '—';
+      if (activeCard) { activeCard.classList.remove('active'); activeCard = null; }
+      btn.textContent = '▶ PLAY AGAIN'; btn.disabled = false;
+    }
+  }
+  rafId = requestAnimationFrame(frame);
+}
+
+// Init
+startBlink();
+applyMouth('rest');
+</script>
+</body>
+</html>
