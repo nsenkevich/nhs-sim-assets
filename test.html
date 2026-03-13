@@ -1,0 +1,2120 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:sans-serif;font-size:12px;color:#111;background:#fff;padding:10px}
+#topbar{display:flex;align-items:center;gap:8px;margin-bottom:8px;flex-wrap:wrap}
+#clock{font-size:11px;color:#666;min-width:180px}
+#tbar{flex:1;height:4px;background:#eee;border-radius:2px;overflow:hidden;min-width:60px}
+#tbar-f{height:100%;background:#378ADD;width:0%;transition:width .3s}
+button.scen-active{background:#1D9E75;color:#fff;border-color:#1D9E75}
+button{padding:5px 12px;border-radius:6px;border:1px solid #ccc;background:#fff;cursor:pointer;font-size:11px}
+button:hover{background:#f5f5f5}
+#floor{width:100%;height:480px;position:relative;background:#f8f8f6;border-radius:10px;border:1px solid #ddd;overflow:hidden;margin-bottom:8px}
+.zone{position:absolute;border:1px solid #ddd;border-radius:5px;padding:3px 5px;font-size:9px;font-weight:600;color:#888;pointer-events:none}
+.zone.zr{border-color:#E24B4A55;color:#E24B4A}
+.zone.zm{border-color:#EF9F2755;color:#BA7517}
+.zone.zn{border-color:#1D9E7555;color:#0F6E56}
+.zone.za{border-color:#378ADD55;color:#185FA5}
+.zone.zw{border-color:#7F77DD55;color:#534AB7}
+.zone.zb{border-color:#A0724A;color:#A0724A;background:transparent}
+.dot{position:absolute;width:11px;height:11px;border-radius:50%;transition:left .9s ease,top .9s ease;z-index:10;cursor:pointer}
+.dot.boarding{box-shadow:0 0 0 2px #E24B4A,0 0 0 4px #fff0f0}
+.dot.stale{box-shadow:0 0 0 2px #BA7517}
+.dot.absent-overlay{opacity:0.25!important}
+.stf{position:absolute;width:15px;height:15px;border-radius:3px;display:flex;align-items:center;justify-content:center;font-size:7px;font-weight:700;z-index:8;transition:left .7s ease,top .7s ease}
+.stf.absent{opacity:0.2;filter:grayscale(1)}
+.sR{background:#CECBF6;color:#3C3489;border:1px solid #AFA9EC}
+.sC{background:#FAC775;color:#633806;border:1px solid #EF9F27}
+.s7{background:#9FE1CB;color:#085041;border:1px solid #5DCAA5}
+.s6{background:#B5D4F4;color:#0C447C;border:1px solid #378ADD}
+.sH{background:#F5C4B3;color:#712B13;border:1px solid #F0997B}
+#stats{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:5px;margin-bottom:7px}
+.st{background:#f5f5f3;border-radius:6px;padding:6px 8px}
+.sl{font-size:9px;color:#888;margin-bottom:2px}
+.sv{font-size:15px;font-weight:500}
+.sv.red{color:#E24B4A}.sv.amber{color:#BA7517}.sv.green{color:#1D9E75}.sv.blue{color:#185FA5}
+#kpis{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:5px;margin-bottom:7px}
+.kpi{background:#fff;border:1px solid #eee;border-radius:6px;padding:6px 8px}
+.kl{font-size:9px;color:#888;margin-bottom:2px}
+.kv{font-size:13px;font-weight:500}
+#tgt-wrap{height:4px;background:#eee;border-radius:2px;overflow:hidden;margin-top:3px}
+#tgt-bar{height:100%;border-radius:2px;transition:width .5s,background .5s;width:0%}
+#controls{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:7px}
+.ctrl{display:flex;align-items:center;gap:5px;font-size:11px;color:#666}
+.ctrl input[type=range]{width:65px}
+.ctrl select{font-size:11px;padding:2px 5px;border-radius:4px;border:1px solid #ddd;background:#fff}
+#legend{display:flex;gap:8px;flex-wrap:wrap;font-size:9px;color:#888;margin-bottom:6px}
+.leg{display:flex;align-items:center;gap:3px}
+.ld{width:9px;height:9px;border-radius:50%}
+.ls{width:9px;height:9px;border-radius:2px;display:flex;align-items:center;justify-content:center;font-size:6px;font-weight:700}
+#log{font-size:9px;color:#888;height:28px;overflow:hidden;line-height:1.6;margin-bottom:6px}
+#shift-alert{display:none;position:absolute;top:0;left:0;right:0;z-index:20;background:#FFF9C4;border-bottom:2px solid #F0C040;padding:5px 10px;font-size:11px;font-weight:600;color:#7A6000;border-radius:8px 8px 0 0;text-align:center}
+#chart-wrap{width:100%;height:80px;position:relative;margin-bottom:6px;background:#f8f8f6;border-radius:6px;border:1px solid #eee;overflow:hidden}
+canvas#chart{width:100%;height:100%}
+.chart-legend{display:flex;gap:10px;font-size:9px;color:#888;margin-bottom:3px}
+.cl{display:flex;align-items:center;gap:3px}
+.cd{width:20px;height:2px;border-radius:1px}
+.help-btn{display:inline-flex;align-items:center;justify-content:center;width:14px;height:14px;border-radius:50%;border:1px solid #bbb;background:#f5f5f5;color:#666;font-size:9px;cursor:pointer;font-weight:700;line-height:1;flex-shrink:0;margin-left:2px;padding:0}
+.help-btn:hover{background:#e8e8e8;border-color:#888}
+.data-btn{display:inline-flex;align-items:center;justify-content:center;width:14px;height:14px;border-radius:50%;border:1px solid #378ADD;background:#E6F1FB;color:#185FA5;font-size:9px;cursor:pointer;font-weight:700;line-height:1;flex-shrink:0;margin-left:2px;padding:0}
+.data-btn:hover{background:#B5D4F4}
+.modal-backdrop{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.35);z-index:1000;align-items:center;justify-content:center}
+.modal-backdrop.open{display:flex}
+.modal{background:#fff;border-radius:10px;border:1px solid #ddd;padding:16px 18px;max-width:340px;width:90%;max-height:80vh;overflow-y:auto;position:relative}
+.modal h3{font-size:13px;font-weight:600;margin-bottom:6px;color:#111}
+.modal p{font-size:11px;color:#555;line-height:1.6;margin-bottom:6px}
+.modal .data-row{display:flex;justify-content:space-between;font-size:10px;padding:3px 0;border-bottom:1px solid #f0f0f0}
+.modal .data-row:last-child{border-bottom:none}
+.modal .data-key{color:#888}
+.modal .data-val{font-weight:500;color:#111}
+.modal .data-val.red{color:#E24B4A}
+.modal .data-val.green{color:#1D9E75}
+.modal .data-val.amber{color:#BA7517}
+.modal .source{font-size:9px;color:#aaa;margin-top:8px;font-style:italic}
+.modal-close{position:absolute;top:10px;right:12px;font-size:16px;cursor:pointer;color:#aaa;line-height:1;background:none;border:none;padding:0}
+.modal-close:hover{color:#333}
+.modal-section{margin-top:10px;padding-top:8px;border-top:1px solid #eee}
+.modal-section-title{font-size:10px;font-weight:600;color:#888;text-transform:uppercase;letter-spacing:.04em;margin-bottom:5px}
+.sFY{background:#F4C0D1;color:#72243E;border:1px solid #ED93B1}
+.sHCA{background:#E8D5F5;color:#5B2180;border:1px solid #C084E8}
+.zone.zt{border-color:#9FE1CB88;color:#085041}
+.zone.zth{border-color:#CECBF688;color:#3C3489;background:#EEEDFE22}
+.dot.theatre{box-shadow:0 0 0 2px #7F77DD,0 0 0 4px #EEEDFE}
+
+</style>
+</head>
+<body>
+<div id="modal-help" class="modal-backdrop" onclick="if(event.target===this)this.classList.remove('open')">
+  <div class="modal" style="max-width:400px">
+    <button class="modal-close" onclick="document.getElementById('modal-help').classList.remove('open')">×</button>
+    <h3>Controls — what everything means</h3>
+    <div id="help-body"></div>
+  </div>
+</div>
+<div id="modal-data" class="modal-backdrop" onclick="if(event.target===this)this.classList.remove('open')">
+  <div class="modal" style="max-width:430px">
+    <button class="modal-close" onclick="document.getElementById('modal-data').classList.remove('open')">×</button>
+    <h3>NHS data reference</h3>
+    <div id="data-body"></div>
+  </div>
+</div>
+
+<div id="modal-zone" class="modal-backdrop" onclick="if(event.target===this)this.classList.remove('open')">
+  <div class="modal" style="max-width:420px">
+    <button class="modal-close" onclick="document.getElementById('modal-zone').classList.remove('open')">×</button>
+    <h3>Department zones — what each area does</h3>
+    <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px;padding:8px;background:#f9f9f7;border-radius:6px;font-size:10px">
+      <strong style="width:100%;color:#555;font-size:10px">Patient dot colours</strong>
+      <span style="display:flex;align-items:center;gap:4px"><span style="width:10px;height:10px;border-radius:50%;background:#E24B4A;display:inline-block"></span>Resus / Cat1–2</span>
+      <span style="display:flex;align-items:center;gap:4px"><span style="width:10px;height:10px;border-radius:50%;background:#EF9F27;display:inline-block"></span>Majors / Cat3</span>
+      <span style="display:flex;align-items:center;gap:4px"><span style="width:10px;height:10px;border-radius:50%;background:#1D9E75;display:inline-block"></span>Minors / Cat4–5</span>
+      <span style="display:flex;align-items:center;gap:4px"><span style="width:10px;height:10px;border-radius:50%;background:#888;display:inline-block"></span>Discharged</span>
+      <span style="display:flex;align-items:center;gap:4px"><span style="width:10px;height:10px;border-radius:50%;background:#E24B4A;border:2px solid #900;display:inline-block"></span>Boarding</span>
+      <span style="display:flex;align-items:center;gap:4px"><span style="width:10px;height:10px;border-radius:50%;background:#7F77DD;display:inline-block"></span>Theatre queue</span>
+      <span style="display:flex;align-items:center;gap:4px"><span style="width:10px;height:10px;border-radius:50%;background:#EF9F27;border:2px solid #900;display:inline-block"></span>Near-breach (&gt;10hr)</span>
+      <strong style="width:100%;color:#555;font-size:10px;margin-top:4px">Ward bed dot colours</strong>
+      <span style="display:flex;align-items:center;gap:4px"><span style="width:10px;height:10px;border-radius:50%;background:#1D9E75;opacity:0.5;display:inline-block"></span>Free</span>
+      <span style="display:flex;align-items:center;gap:4px"><span style="width:10px;height:10px;border-radius:50%;background:#378ADD;opacity:0.5;display:inline-block"></span>Occupied (ward patient)</span>
+      <span style="display:flex;align-items:center;gap:4px"><span style="width:10px;height:10px;border-radius:50%;background:#E24B4A;display:inline-block"></span>Boarder from A&amp;E</span>
+      <span style="display:flex;align-items:center;gap:4px"><span style="width:10px;height:10px;border-radius:50%;background:#bbb;display:inline-block"></span>Social care blocked</span>
+    </div>
+    <div id="zone-body"></div>
+  </div>
+</div>
+
+<div id="modal-logic" class="modal-backdrop" onclick="if(event.target===this)this.classList.remove('open')">
+  <div class="modal" style="max-width:520px">
+    <button class="modal-close" onclick="document.getElementById('modal-logic').classList.remove('open')">×</button>
+    <h3>Simulation logic — how the model works</h3>
+    <div id="logic-body"></div>
+  </div>
+</div>
+
+<div id="modal-effects" class="modal-backdrop" onclick="if(event.target===this)this.classList.remove('open')">
+  <div class="modal" style="max-width:600px">
+    <button class="modal-close" onclick="document.getElementById('modal-effects').classList.remove('open')">×</button>
+    <h3>Simulation effects — all levers the model responds to</h3>
+    <div id="effects-body"></div>
+  </div>
+</div>
+
+<div id="topbar">
+  <button id="btn" onclick="handleBtn()">▶ Start</button>
+  <button id="btn-baseline" onclick="setBaseline()" style="font-size:10px;padding:4px 8px;background:#f5f5f3;border:1px solid #ccc;border-radius:6px;color:#666;display:none" title="Capture this run as baseline for intervention comparison">📌 Set baseline</button>
+  <button data-scenario="normal" onclick="applyScenario('normal')" title="Typical summer weekday">Quiet day</button>
+  <button data-scenario="winter" onclick="applyScenario('winter')" title="Winter pressure — high arrivals, wards blocked">Winter crisis</button>
+  <button data-scenario="monday" onclick="applyScenario('monday')" title="Monday morning surge with weekend backlog">Monday rush</button>
+  <button data-scenario="night" onclick="applyScenario('night')" title="Night shift — reduced staff, no consultant">Night shift</button>
+  <div id="tbar"><div id="tbar-f"></div></div>
+  <span id="season-label" style="display:none">Summer</span><div id="clock">08:00 — Day shift</div>
+</div>
+<div id="interventions-bar" style="display:flex;flex-wrap:wrap;gap:6px;padding:6px 8px;background:#f0f4ff;border-radius:8px;margin-bottom:6px;border:1px solid #d0d8f0">
+  <div style="width:100%;font-size:9px;font-weight:700;color:#4B46A0;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:2px">
+    ⚡ Interventions — toggle before running to see impact
+  </div>
+  <div id="inv-cards" style="display:flex;flex-wrap:wrap;gap:5px;width:100%"></div>
+</div>
+<div id="baseline-banner" style="display:none;font-size:9px;color:#555;background:#fffbe6;border:1px solid #f0d060;border-radius:6px;padding:5px 10px;margin-bottom:4px"></div>
+<div id="shift-alert">Shift handover — throughput paused</div>
+<div id="floor"></div>
+<div class="chart-legend">
+  <div class="cl"><div class="cd" style="background:#EF9F27"></div>Waiting</div>
+  <div class="cl"><div class="cd" style="background:#E24B4A"></div>Boarding</div>
+  <div class="cl"><div class="cd" style="background:#378ADD"></div>Investigations</div>
+</div>
+<div id="chart-wrap"><canvas id="chart"></canvas></div>
+<div id="stats">
+  <div class="st"><div class="sl">Waiting</div><div class="sv amber" id="s-wait">0</div></div>
+  <div class="st"><div class="sl">Investigating</div><div class="sv blue" id="s-inv">0</div></div>
+  <div class="st"><div class="sl">Treating</div><div class="sv" id="s-treat">0</div></div>
+  <div class="st"><div class="sl">Theatre queue</div><div class="sv" style="color:#534AB7" id="s-thtr">0</div></div>
+  <div class="st"><div class="sl">Boarding</div><div class="sv red" id="s-board">0</div></div>
+  <div class="st"><div class="sl">Discharged</div><div class="sv green" id="s-disc">0</div></div>
+  <div class="st"><div class="sl">12hr breaches</div><div class="sv red" id="s-breach">0</div></div>
+</div>
+<div id="kpis">
+  <div class="kpi"><div class="kl">4-hour target (NHS: 95%)</div><div class="kv" id="k-4hr">—</div><div id="tgt-wrap"><div id="tgt-bar"></div></div></div>
+  <div class="kpi"><div class="kl">Avg door-to-treatment</div><div class="kv" id="k-dtt">—</div></div>
+  <div class="kpi"><div class="kl">Ward beds free / total</div><div class="kv" id="k-beds">—</div></div>
+  <div class="kpi"><div class="kl">Running cost estimate</div><div class="kv red" id="k-cost">£0</div></div>
+</div>
+<div id="controls">
+
+  <div class="ctrl">
+    <span>Doctors</span><input type="range" min="1" max="5" value="2" step="1" id="sl-doc" oninput="updateCtrl('doc',this.value)"><span id="v-doc">2</span>
+  </div>
+  <div class="ctrl">
+    <span>Consultant</span><input type="range" min="0" max="2" value="1" step="1" id="sl-con" oninput="updateCtrl('con',this.value)"><span id="v-con">1</span>
+  </div>
+  <div class="ctrl">
+    <span>FY1/FY2 + PA</span><input type="range" min="0" max="6" value="2" step="1" id="sl-fy1" oninput="updateCtrl('fy1',this.value)"><span id="v-fy1">2</span>
+  </div>
+  <div class="ctrl">
+    <span>B7 ENPs</span><input type="range" min="0" max="4" value="1" step="1" id="sl-b7" oninput="updateCtrl('b7',this.value)"><span id="v-b7">1</span>
+  </div>
+  <div class="ctrl">
+    <span>B5/6 nurses</span><input type="range" min="1" max="10" value="6" step="1" id="sl-b5" oninput="updateCtrl('b5',this.value)"><span id="v-b5">6</span>
+  </div>
+  <div class="ctrl">
+    <span>HCAs</span><input type="range" min="0" max="4" value="2" step="1" id="sl-hca" oninput="updateCtrl('hca',this.value)"><span id="v-hca">2</span>
+  </div>
+  <div class="ctrl">
+    <span>Ward beds</span><input type="range" min="2" max="20" value="8" step="1" id="sl-bed" oninput="updateCtrl('bed',this.value)"><span id="v-bed">8</span>
+  </div>
+  <div class="ctrl">
+    <span>Arrivals/hr</span><input type="range" min="4" max="28" value="12" step="1" id="sl-arr" oninput="updateCtrl('arr',this.value)"><span id="v-arr">12</span>
+  </div>
+  <div class="ctrl">
+    <span>Ambul/hr</span><input type="range" min="0" max="8" value="2" step="1" id="sl-amb" oninput="updateCtrl('amb',this.value)"><span id="v-amb">2</span>
+  </div>
+  <div class="ctrl">
+    <span>Staff absence</span><input type="range" min="0" max="40" value="8" step="1" id="sl-abs" oninput="updateCtrl('abs',this.value)"><span id="v-abs">8</span>%
+  </div>
+  <div class="ctrl">
+    <span>Social care block</span><input type="range" min="0" max="40" value="12" step="1" id="sl-soc" oninput="updateCtrl('soc',this.value)"><span id="v-soc">12</span>%
+  </div>
+</div>
+<div id="inv-result" style="display:none;margin-bottom:6px;padding:8px 12px;background:#f0faf6;border-radius:8px;border:1px solid #a8dfc8"></div>
+<div style="display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin:6px 0 4px 0;padding:6px 8px;background:#f5f5f3;border-radius:6px;border:1px solid #e8e8e4">
+  <span style="font-size:9px;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:0.5px;width:100%;margin-bottom:2px">Staff on the floor</span>
+  <div style="display:flex;align-items:center;gap:3px">
+    <div class="stf sR" style="position:relative;width:18px;height:18px;font-size:8px">Dr</div>
+    <span style="font-size:9px;color:#555">Registrar</span>
+  </div>
+  <div style="display:flex;align-items:center;gap:3px">
+    <div class="stf sC" style="position:relative;width:18px;height:18px;font-size:8px">Co</div>
+    <span style="font-size:9px;color:#555">Consultant</span>
+  </div>
+  <div style="display:flex;align-items:center;gap:3px">
+    <div class="stf sFY" style="position:relative;width:18px;height:18px;font-size:8px">FY</div>
+    <span style="font-size:9px;color:#555">FY1/FY2 &amp; PA</span>
+  </div>
+  <div style="display:flex;align-items:center;gap:3px">
+    <div class="stf s7" style="position:relative;width:18px;height:18px;font-size:8px">B7</div>
+    <span style="font-size:9px;color:#555">ENP</span>
+  </div>
+  <div style="display:flex;align-items:center;gap:3px">
+    <div class="stf s6" style="position:relative;width:18px;height:18px;font-size:8px">B5</div>
+    <span style="font-size:9px;color:#555">Nurse</span>
+  </div>
+  <div style="display:flex;align-items:center;gap:3px">
+    <div class="stf sHCA" style="position:relative;width:18px;height:18px;font-size:8px">HCA</div>
+    <span style="font-size:9px;color:#555">HCA</span>
+  </div>
+  <div style="display:flex;align-items:center;gap:3px">
+    <div class="stf sH" style="position:relative;width:18px;height:18px;font-size:8px">Rx</div>
+    <span style="font-size:9px;color:#555">Reception</span>
+  </div>
+  <div style="display:flex;align-items:center;gap:3px">
+    <div class="stf s7" style="position:relative;width:18px;height:18px;font-size:8px">T</div>
+    <span style="font-size:9px;color:#555">Triage nurse</span>
+  </div>
+  <div style="display:flex;align-items:center;gap:3px;margin-left:8px">
+    <div class="stf" style="position:relative;width:18px;height:18px;font-size:8px;background:#ddd;color:#999;border:1px solid #bbb;opacity:0.5">Dr</div>
+    <span style="font-size:9px;color:#999">Absent</span>
+  </div>
+</div>
+<div style="display:flex;gap:8px;margin-bottom:8px">
+  <button class="help-btn" style="width:auto;padding:4px 10px;border-radius:6px;font-size:11px" onclick="openHelp()">? explain controls</button>
+  <button class="data-btn" style="width:auto;padding:4px 10px;border-radius:6px;font-size:11px" onclick="openData()"># NHS data</button>
+  <button class="help-btn" style="width:auto;padding:4px 10px;border-radius:6px;font-size:11px;border-color:#1D9E75;color:#0F6E56;background:#f0faf6" onclick="openZones()">⬛ zones</button>
+  <button class="help-btn" style="width:auto;padding:4px 10px;border-radius:6px;font-size:11px;border-color:#7F77DD;color:#4B46A0;background:#f5f4ff" onclick="openLogic()">⚙ logic</button>
+  <button class="help-btn" style="width:auto;padding:4px 10px;border-radius:6px;font-size:11px;border-color:#E24B4A;color:#B03030;background:#fff5f5" onclick="openEffects()">📊 effects</button>
+</div>
+<div id="legend">
+  <div class="leg"><div class="ld" style="background:#E24B4A"></div>Resus/Cat1-2</div>
+  <div class="leg"><div class="ld" style="background:#EF9F27"></div>Majors/Cat3</div>
+  <div class="leg"><div class="ld" style="background:#1D9E75"></div>Minors/Cat4-5</div>
+  <div class="leg"><div class="ld" style="background:#888"></div>Discharged</div>
+  <div class="leg"><div class="ld" style="background:#C4956A;box-shadow:0 0 0 2px #A0724A,0 0 0 4px #fff"></div>Boarding</div>
+  <div class="leg"><div class="ld" style="background:#EF9F27;box-shadow:0 0 0 2px #EF9F27,0 0 0 4px #fff"></div>Near-breach (&gt;10hr)</div>
+  <div class="leg"><div class="ls sR">Dr</div>Registrar</div>
+  <div class="leg"><div class="ls sC">Co</div>Consultant</div>
+  <div class="leg"><div class="ls s7">B7</div>B7 ENP</div>
+  <div class="leg"><div class="ls s6">6</div>B5/6</div>
+  <div class="leg"><div class="ls sFY">FY</div>FY1/FY2 doctor</div>
+  <div class="leg"><div class="ld" style="background:#7F77DD;box-shadow:0 0 0 2px #7F77DD,0 0 0 4px #fff"></div>Theatre queue</div>
+  <div class="leg"><div class="ls sHCA">HCA</div>HCA</div>
+  <div class="leg"><div class="ls" style="background:#ddd;color:#666;opacity:0.4">Dr</div>Absent</div>
+</div>
+<div id="log"></div>
+
+<script>
+const HELP={
+
+  doc:{
+    title:'Registrars',
+    text:'Senior trainee doctors (typically ST4–ST8 in emergency medicine). They manage the Resus and Majors areas and carry 6–8 patients simultaneously — reviewing results, making decisions, seeing new arrivals. They can make admission decisions and sign off FY1/FY2 work. Reducing from 2 to 1 roughly halves throughput in Majors and Resus, and immediately creates a countersignature queue for junior doctors.',
+  },
+  con:{
+    title:'Consultant',
+    text:'A fully qualified emergency medicine consultant — the most senior clinician on the floor. They carry up to 12 patients, make final admission and discharge decisions, and are the escalation point when boarding or theatre queues build up. Without a consultant (set to 0, as on most night shifts), there is no senior decision-maker. FY1/FY2 doctors cannot discharge or admit without one present.',
+  },
+  fy1:{
+    title:'FY1/FY2 Doctors (Foundation Year 1 & 2)',
+    text:'The first two years after medical school. Foundation doctors can assess patients, order X-rays, bloods, ECGs, and CTs, and initiate treatment — but every admission or discharge decision needs countersigning by a registrar or consultant. In the sim they add 15–25 minutes per patient for the supervision loop. When senior doctors are scarce, FY1s become a queue — busy but blocked, unable to move patients on without sign-off.',
+  },
+  b7:{
+    title:'Band 7 ENPs (Emergency Nurse Practitioners)',
+    text:'The highest-grade nurses on the A&E floor. ENPs can independently assess, diagnose, prescribe, and discharge patients in the Minors area — no doctor needed. They are cost-effective: one B7 ENP clears the Minors queue as fast as a doctor at roughly half the cost. They cannot manage Majors, Resus, or surgical patients independently. Adding one ENP when Minors is backed up is often the highest-value single hire in the department.',
+  },
+  b5:{
+    title:'Band 5/6 Nurses',
+    text:'The frontline nursing workforce. Band 5s are newly qualified; Band 6s are senior nurses with more autonomy. They perform observations, IV cannulas, blood draws, medication administration, and patient monitoring. Without them, doctors must do basic tasks themselves, dramatically reducing the number of patients a doctor can carry. They are also the staff who collect samples for bloods and X-ray requests — so nurse shortages directly lengthen the imaging wait.',
+  },
+  bed:{
+    title:'Ward Beds',
+    text:'The total inpatient beds available to receive A&E admissions. This is the single most important bottleneck in the system. When a patient needs admission but no bed exists, they become a "boarder" — staying in an A&E treatment bay on a trolley, blocking that bay for new patients. The cascade from even 3–4 boarders can seize a department. Theatre patients who need a surgical ward bed post-op add to the same competition.',
+  },
+  arr:{
+    title:'Walk-in Arrivals per Hour',
+    text:'Patients arriving by car, taxi, or on foot. They go through the full pathway: Reception → Waiting room → Triage → Treatment zone → Investigations (if needed) → Discharge or admission. Arrival follows a real daily pattern: quiet overnight, building from 08:00, peaking 10:00–12:00. This slider sets the baseline; the hourly multiplier applies on top. Monday mornings are the busiest of the week.',
+  },
+  amb:{
+    title:'Ambulance Arrivals per Hour',
+    text:'999 patients bypass reception and triage entirely, going straight to Resus or a Majors bay. They are always Cat 1, 2, or 3 — the sickest third of presentations. Ambulance patients also disproportionately need imaging: CT head for trauma, chest X-ray for respiratory, ECG for cardiac. The paramedic crew cannot respond to another call until handover is complete — the NHS target is 15 minutes, the 2023–24 winter average was 63 minutes.',
+  },
+  abs:{
+    title:'Staff Absence Rate',
+    text:'The percentage of rostered staff who do not show up. Each staff member is rolled individually at startup and at every shift handover. Absent staff are shown greyed out and take no part in care — including countersigning FY1 work. In winter, absence cascades: one sick consultant means FY1 decisions queue up, investigations are ordered but not reviewed, and patients wait. This is distinct from vacancies — these people are on the rota but not present.',
+  },
+  hca:{
+    title:'HCAs (Healthcare Assistants)',
+    text:'Healthcare assistants support nursing staff with non-clinical tasks: taking observations, transporting patients, collecting samples, and preparing beds. In the sim, HCAs directly reduce investigation turnaround times — 2 HCAs gives 30% faster results, 1 HCA gives 15%. Without HCAs, nurses must do these tasks themselves, pulling them away from clinical care and slowing the investigation pipeline. HCAs cost significantly less than nurses and are one of the highest-value additions to a busy ED.',
+  },
+  soc:{
+    title:'Social Care Block',
+    text:'The percentage of ward beds occupied by patients who are medically fit to leave but cannot — because no home care package, care home bed, or supported discharge has been arranged. These patients have nothing clinically wrong with them. They are waiting on the council or a care provider. Every bed they occupy is unavailable to A&E. Theatre patients needing a post-op surgical bed face the same competition. This is the most politically contentious number in NHS performance data.',
+  },
+};
+
+const DATA={
+  season:{
+    title:'Season — NHS data',
+    rows:[
+      {k:'Summer 4-hr compliance (Aug 2024)',v:'76.3%',c:'red'},
+      {k:'Winter 4-hr compliance (Jan 2025)',v:'68.1%',c:'red'},
+      {k:'Winter treatment time multiplier (sim)',v:'~1.35×',c:'amber'},
+      {k:'Winter Cat1-3 acuity share vs summer',v:'+7 percentage points',c:'amber'},
+      {k:'Peak arrival month',v:'January',c:''},
+      {k:'Year-on-year attendance growth (2023–24)',v:'+4.2%',c:'amber'},
+    ],
+    source:'NHS England A&E Attendances and Emergency Admissions, 2024–25',
+  },
+  doc:{
+    title:'Registrars — NHS data',
+    rows:[
+      {k:'Avg patients per registrar (Majors)',v:'6–8 simultaneous',c:''},
+      {k:'Avg patients per consultant',v:'10–12 simultaneous',c:''},
+      {k:'A&E doctor vacancy rate (2024)',v:'~9%',c:'amber'},
+      {k:'Locum/agency doctor cost premium',v:'~2.5× substantive cost',c:'red'},
+      {k:'RCEM recommended registrar:patient ratio',v:'1 per 8 Majors patients',c:''},
+    ],
+    source:'NHS Digital Workforce Statistics; RCEM workforce report 2024',
+  },
+  con:{
+    title:'Consultant — NHS data',
+    rows:[
+      {k:'Departments with 24/7 consultant cover',v:'~40%',c:'red'},
+      {k:'Night shift consultant presence',v:'Rare — typically on-call from home',c:'amber'},
+      {k:'Admission decisions without consultant',v:'Take ~35% longer on average',c:'amber'},
+      {k:'RCEM recommended ratio',v:'1 per 50 attendances/day',c:''},
+      {k:'Consultant vacancy rate in EM (2024)',v:'~14%',c:'red'},
+    ],
+    source:'Royal College of Emergency Medicine (RCEM) Standards 2024',
+  },
+  fy1:{
+    title:'FY1/FY2 Doctors — NHS data',
+    rows:[
+      {k:'Foundation doctors in NHS England',v:'~17,000',c:''},
+      {k:'FY1 annual salary (2024–25)',v:'£32,398',c:''},
+      {k:'FY2 annual salary (2024–25)',v:'£37,303',c:''},
+      {k:'Avg wait for consultant countersignature',v:'15–40 min (busy dept)',c:'amber'},
+      {k:'Decisions requiring countersign (FY1)',v:'~60% of disposals',c:''},
+      {k:'Decisions requiring countersign (FY2)',v:'~30% of disposals',c:''},
+      {k:'Foundation programme fill rate (2024)',v:'99.6%',c:'green'},
+    ],
+    source:'NHS Foundation Programme; NHS Employers pay scales 2024–25',
+  },
+  b7:{
+    title:'Band 7 ENPs — NHS data',
+    rows:[
+      {k:'B7 ENP annual salary (NHS AfC 2024–25)',v:'£46,148–£52,809',c:''},
+      {k:'Junior doctor annual cost (incl. on-costs)',v:'~£75,000–£90,000',c:''},
+      {k:'Minors patients an ENP can see per hour',v:'3–4 independently',c:'green'},
+      {k:'Minors conditions ENP can discharge',v:'~70% without a doctor',c:'green'},
+      {k:'ENP vacancy rate (2024)',v:'~11%',c:'amber'},
+    ],
+    source:'NHS Agenda for Change pay scales 2024–25; RCEM',
+  },
+  b5:{
+    title:'Band 5/6 Nurses — NHS data',
+    rows:[
+      {k:'Band 5 annual salary',v:'£29,970–£36,483',c:''},
+      {k:'Band 6 annual salary',v:'£37,338–£44,962',c:''},
+      {k:'Nursing vacancy rate in England (2024)',v:'~7.8% (≈38,000 posts)',c:'red'},
+      {k:'Agency Band 5 shift cost vs substantive',v:'~£500 vs £180',c:'red'},
+      {k:'Safe nurse:patient ratio (Majors)',v:'1:4 recommended; often 1:7+',c:'red'},
+      {k:'Blood sample to result (typical)',v:'60–90 min via lab',c:'amber'},
+    ],
+    source:'NHS Digital; NHS Employers; NMC workforce data 2024',
+  },
+  bed:{
+    title:'Ward Beds — NHS data',
+    rows:[
+      {k:'Total general & acute beds in England',v:'~106,000',c:''},
+      {k:'Average occupancy 2024–25',v:'92.5%',c:'red'},
+      {k:'NICE safe maximum occupancy',v:'90%',c:'amber'},
+      {k:'Beds blocked by delayed discharge (daily)',v:'12,663',c:'red'},
+      {k:'Winter peak blockage (Jan 2024)',v:'14,436 per day',c:'red'},
+      {k:'Estimated annual cost of delayed discharge',v:'£2.6 billion',c:'red'},
+    ],
+    source:'NHS England Bed Availability and Occupancy data, 2024–25',
+  },
+  arr:{
+    title:'Walk-in Arrivals — NHS data',
+    rows:[
+      {k:'Total A&E attendances (monthly, 2025)',v:'~2.4 million',c:''},
+      {k:'Daily average across England',v:'~140,000',c:''},
+      {k:'Per busy district general hospital (daily)',v:'200–400',c:''},
+      {k:'Peak arrival window',v:'09:00–12:00, Monday highest',c:''},
+      {k:'Overnight (midnight–06:00) share',v:'~12% of daily total',c:''},
+    ],
+    source:'NHS England A&E Attendances and Emergency Admissions, 2025',
+  },
+  amb:{
+    title:'Ambulance Arrivals — NHS data',
+    rows:[
+      {k:'999 calls resulting in A&E conveyance',v:'~40%',c:''},
+      {k:'Target ambulance handover time',v:'15 minutes',c:''},
+      {k:'Average handover time (winter 2023–24)',v:'63 minutes',c:'red'},
+      {k:'Handovers over 60 min (winter 2023–24)',v:'~33% of all handovers',c:'red'},
+      {k:'Ambulances queuing at hospitals (peak)',v:'Up to 12 simultaneously',c:'red'},
+      {k:'Cost of delayed handover per hour',v:'~£130 (crew + vehicle)',c:''},
+    ],
+    source:'AACE; NHS England Ambulance Quality Indicators 2023–24',
+  },
+  imaging:{
+    title:'Imaging & Investigations — NHS data',
+    rows:[
+      {k:'X-ray: typical A&E turnaround',v:'20–40 minutes',c:''},
+      {k:'Bloods (FBC, U&E, troponin): turnaround',v:'60–90 minutes',c:'amber'},
+      {k:'CT scan: typical A&E turnaround',v:'45–90 minutes',c:'amber'},
+      {k:'ECG: turnaround',v:'5–10 minutes',c:'green'},
+      {k:'CT scanner availability (nights)',v:'Often single on-call radiographer',c:'red'},
+      {k:'Radiology reporting backlog (2024)',v:'>1.7 million unreported scans',c:'red'},
+      {k:'% of A&E patients needing bloods',v:'~65%',c:''},
+      {k:'% needing imaging (X-ray or CT)',v:'~45%',c:''},
+    ],
+    source:'NHS England Diagnostic Waiting Times 2024; RCR Radiology Workforce Report 2024',
+  },
+  theatre:{
+    title:'Theatre Queue (Emergency Surgery) — NHS data',
+    rows:[
+      {k:'Emergency surgery as % of all NHS ops',v:'~15%',c:''},
+      {k:'Typical wait for emergency theatre slot',v:'2–8 hours from decision',c:'amber'},
+      {k:'Patient must fast before general anaesthetic',v:'Yes — min 6 hrs (solid food)',c:''},
+      {k:'Emergency theatre cost premium vs elective',v:'~2.5–3× per case',c:'red'},
+      {k:'Cancelled emergency ops (no slot)',v:'~8% of listed cases',c:'amber'},
+      {k:'Surgical patients boarding in A&E',v:'Common — no dedicated surgical holding',c:'red'},
+      {k:'NHS target: emergency op within 24 hrs',v:'Met in ~72% of cases (2024)',c:'amber'},
+    ],
+    source:'NHS England Theatre Utilisation; Getting It Right First Time (GIRFT) Surgery 2024',
+  },
+  abs:{
+    title:'Staff Absence — NHS data',
+    rows:[
+      {k:'Summer absence rate (all NHS staff)',v:'~8%',c:'amber'},
+      {k:'Winter absence rate (Jan 2024)',v:'~22%',c:'red'},
+      {k:'Peak week absence (Dec 2023)',v:'49,783 staff in one week',c:'red'},
+      {k:'Burnout-related absence (nursing)',v:'Cited by 44% of leavers',c:'amber'},
+      {k:'Cost of sickness absence (NHS England)',v:'~£2.4 billion/year',c:'red'},
+    ],
+    source:'NHS Digital Workforce Statistics; NHS Employers sickness absence data 2024',
+  },
+  soc:{
+    title:'Social Care Block — NHS data',
+    rows:[
+      {k:'Patients fit-for-discharge but stuck (daily)',v:'12,663',c:'red'},
+      {k:'As % of all general & acute beds',v:'~12%',c:'red'},
+      {k:'Winter peak (Jan 2024)',v:'14,436 per day',c:'red'},
+      {k:'Cause: waiting for home care package',v:'~38% of delays',c:'amber'},
+      {k:'Cause: waiting for care home bed',v:'~29% of delays',c:'amber'},
+      {k:'Annual cost to NHS',v:'~£2.6 billion',c:'red'},
+      {k:'Social care workforce vacancy rate',v:'~9.9% (152,000 posts)',c:'red'},
+    ],
+    source:'NHS England; DHSC Adult Social Care Discharge Funding data 2024–25',
+  },
+};
+
+const ZONE_INFO=[
+  {
+    id:'ambay',
+    label:'Ambulance Bay',
+    color:'#185FA5',
+    who:'Paramedic crews + most seriously ill patients arriving by 999',
+    what:'The dedicated entrance for ambulances. Patients bypass reception and triage entirely — they are already assessed and treated en route. The paramedic crew cannot leave until they have handed over the patient to A&E staff.',
+    bottleneck:'Handover delay. If no A&E nurse is free to take the handover, the ambulance crew waits — unable to respond to the next 999 call. NHS target is 15 minutes; winter 2023–24 average was 63 minutes.',
+    nhs:'Up to 12 ambulances can queue outside a busy hospital simultaneously.',
+  },
+  {
+    id:'resus',
+    label:'Resus (Resuscitation Room)',
+    color:'#E24B4A',
+    who:'Cat 1 and Cat 2 patients — the most critically ill. Cardiac arrest, major trauma, stroke, severe breathing difficulty.',
+    what:'The highest-intensity area of A&E. Each bay has full resuscitation equipment. A consultant or registrar leads, supported by nurses. Decisions happen in minutes. The sim caps Resus at 8 patients — beyond that, Cat 2 patients overflow to Majors.',
+    bottleneck:'Staff ratio. Resus patients need one-to-one nursing. If nurses are absent, a Resus bay cannot be safely opened.',
+    nhs:'Cat 1 target: immediate response. Cat 2 target: seen within 10 minutes.',
+  },
+  {
+    id:'majors',
+    label:'Majors',
+    color:'#BA7517',
+    who:'Cat 2 overflow and Cat 3 patients — urgent but not immediately life-threatening. Chest pain, abdominal pain, head injury, fractures.',
+    what:'The main treatment floor. Registrars and FY1/FY2 doctors manage patients here, often seeing 6–12 simultaneously. Most Cat 3 patients need bloods or imaging before a decision can be made — so they move to Awaiting Results and return. FY1/FY2 doctors can start treatment but need consultant countersignature to admit or discharge.',
+    bottleneck:'The countersignature loop. FY1s are busy but blocked — every decision waits for a registrar or consultant to sign off. In the sim, if no senior is available after 20 sim-minutes, FY1s proceed autonomously.',
+    nhs:'Cat 3 target: seen within 60 minutes. Reality in 2024–25: median wait over 90 minutes.',
+  },
+  {
+    id:'reception',
+    label:'Reception',
+    color:'#888',
+    who:'Band 2/3 admin staff. All walk-in patients.',
+    what:'The first stop for anyone arriving on foot. Staff register the patient — name, date of birth, address, reason for attendance. Takes 2–5 minutes normally, longer if the receptionist is absent or busy. No clinical assessment happens here.',
+    bottleneck:'Queue buildup. If reception is slow, patients stack up before they even reach triage — adding invisible time to the 4-hour clock that has already started.',
+    nhs:'The 4-hour clock starts at arrival, not at triage. Every minute in reception counts.',
+  },
+  {
+    id:'waiting',
+    label:'Waiting Room',
+    color:'#534AB7',
+    who:'All walk-in patients who have been registered but not yet triaged or called through.',
+    what:'Patients wait here after reception until a triage nurse calls them. The waiting room is not clinically monitored — a deteriorating patient here is a safety risk. In the sim, patients are sorted by clinical priority when the triage nurse calls them, not by arrival order.',
+    bottleneck:'Volume vs triage capacity. One triage nurse cannot process fast arrivals. The waiting room fills, patients deteriorate unseen, and the queue becomes the visible face of a department in crisis.',
+    nhs:'Nationally, median waiting room time before triage exceeded 45 minutes in winter 2024.',
+  },
+  {
+    id:'triage',
+    label:'Triage',
+    color:'#0F6E56',
+    who:'A Band 6 triage nurse.',
+    what:'A rapid assessment — typically 3–5 minutes — to assign a Manchester Triage Category (Cat 1–5). The nurse takes observations, asks about symptoms, and decides urgency. This determines which zone the patient goes to and how quickly they must be seen. The triage nurse does not treat.',
+    bottleneck:'Single point of failure. One nurse triaging means one patient at a time. If absent or busy, the entire walk-in stream stalls.',
+    nhs:'Manchester Triage System used across NHS England. Cat 1 = immediate, Cat 5 = non-urgent (up to 4 hours).',
+  },
+  {
+    id:'minors',
+    label:'Minors',
+    color:'#0F6E56',
+    who:'Cat 4 and Cat 5 patients — minor injuries and illnesses. Sprains, minor lacerations, mild infections, simple fractures.',
+    what:'Treated by Band 7 ENPs (Emergency Nurse Practitioners) who can independently assess, diagnose, prescribe, and discharge — without a doctor. ENPs see 3–4 patients per hour. If the ENP is overwhelmed and Minors queue exceeds 15, registrars overflow to help. Many Cat 4 patients still need an X-ray, adding ~25 minutes.',
+    bottleneck:'Volume. Minors is typically 60–65% of all A&E attendances. One ENP cannot clear a peak-hour Minors queue alone — but adding doctors to Minors is expensive. ENPs are the cost-effective solution.',
+    nhs:'~65% of A&E attendances are Cat 4 or Cat 5. ENPs cost roughly half as much per hour as a junior doctor.',
+  },
+  {
+    id:'invest',
+    label:'Awaiting Results',
+    color:'#185FA5',
+    who:'Patients who have been seen by a doctor or ENP and are waiting for test results.',
+    what:'After initial assessment, most Cat 2/3/4 patients need investigations — bloods, X-ray, CT, or ECG — before a decision can be made. The doctor moves on to other patients while results are processed. When results return, the patient is flagged as priority and reassigned immediately. Typical waits: ECG 8 min, X-ray 25 min, Bloods 75 min, CT 90 min.',
+    bottleneck:'Lab and radiology capacity. A single CT scanner at night means emergency scans queue behind each other. Radiology has a national backlog of 1.7 million unreported scans.',
+    nhs:'~65% of A&E patients need bloods. ~45% need imaging. Both queues run independently of staffing.',
+  },
+  {
+    id:'theatre',
+    label:'Theatre Queue',
+    color:'#534AB7',
+    who:'Patients who have been assessed and listed for emergency surgery — appendicitis, fractured hip, acute abdomen.',
+    what:'Once a surgeon decides a patient needs an operation, they are listed for theatre. They cannot eat or drink (in case general anaesthetic is needed). They wait — sometimes for hours — in A&E or a surgical holding area for a theatre slot to open. The sim has 3 theatre slots; when all are full, surgical patients board in the department instead.',
+    bottleneck:'Theatre availability. Emergency theatres run 24/7 but are shared with trauma and obstetric emergencies. Typical wait for a non-life-threatening emergency slot is 2–8 hours. Each case costs ~2.5–3× an elective operation.',
+    nhs:'NHS target: emergency surgery within 24 hours. Met in ~72% of cases in 2024.',
+  },
+  {
+    id:'discharge',
+    label:'Discharge / Home',
+    color:'#888',
+    who:'Patients who have completed their A&E episode — sent home, referred to GP, or transferred.',
+    what:'Patients move here once they have been treated and discharged. In the sim this represents the successful end of the pathway. Patients admitted to a ward bed are shown here in blue; those who went home in grey; theatre patients in purple.',
+    bottleneck:'None at this end — but delayed discharge upstream (boarding) means this zone stays smaller than it should. Every patient still in the department is one who has not reached here yet.',
+    nhs:'NHS target: 95% of patients through A&E within 4 hours. National average in 2024–25: 73.9%.',
+  },
+  {
+    id:'boarding',
+    label:'Boarding — No Bed',
+    color:'#E24B4A',
+    who:'Patients who have been fully assessed, treated, and are medically ready for a ward bed — but no bed exists.',
+    what:'The most damaging zone in the simulation. A boarding patient occupies an A&E bay on a trolley, blocking it for incoming patients. They receive no active treatment — they are simply waiting for a ward to find them a bed. Each boarder costs ~£400/day. When boarding patients exceed 3–4, the department begins to seize — new patients cannot be moved through because there is nowhere to put them.',
+    bottleneck:'Ward capacity and social care. Beds are full (92.5% average occupancy nationally). Of those full beds, ~12% contain patients who are medically fit to leave but cannot — because no home care or care home placement is available.',
+    nhs:'Average 12,663 patients per day boarding across England. Winter peak: 14,436. Annual cost: £2.6 billion.',
+  },
+  {
+    id:'ward',
+    label:'Ward Beds',
+    color:'#0F6E56',
+    who:'Inpatient ward beds available to receive patients admitted from A&E.',
+    what:'Each dot represents one ward bed. Colour shows status: green = free, blue = occupied by a ward patient, red = occupied by a boarder from A&E still waiting to move, grey = blocked by a patient who is medically fit to leave but has no social care package in place. The simulation starts each day with boarders already in A&E — reflecting the overnight handover reality where day shift inherits the previous night problems.',
+    bottleneck:'Social care discharge delays. Grey beds are permanently blocked for the entire simulation — those patients cannot leave hospital because no home care or care home placement is available. Drag the Social care block slider up and watch green beds turn grey, then red boarder dots appear in A&E as the knock-on effect.',
+    nhs:'England has 106,000 general and acute beds at 92.5% average occupancy. On any given day, ~12,663 patients are medically fit for discharge but remain in hospital. Social care vacancy rate is 9.9% — 152,000 unfilled posts.',
+  },
+];
+
+const LOGIC_ENTRIES=[
+  {
+    title:'Patient arrival & triage',
+    body:`Walk-in patients arrive at a rate set by the Arrivals/hr slider, modulated by an hourly curve (peak 10:00–14:00, quiet 02:00–06:00). Ambulance patients bypass reception and triage entirely and go direct to Resus or Majors. Each walk-in patient is registered at Reception (2–3 min) then assessed by the Triage nurse using the Manchester Triage System (3 min). If the triage nurse is absent, a Band 5/6 nurse covers at reduced speed (6 min). Patients are assigned Cat1–5 which determines their zone, treatment time, and investigation needs.`
+  },
+  {
+    title:'Staff assignment & capacity',
+    body:`tryAssign() runs every tick. It counts only <strong>actively treating</strong> patients toward a doctor's capacity — patients in investigations do not count. Registrars: max 3 active. Consultants: max 4 active. FY/PA: max 2 active, Cat3/4 only. ENPs: one patient at a time, Minors only. If Minors queue exceeds 8, registrars overflow to help. If no senior is present or a patient has waited >20 min, FY/PA act autonomously without countersignature.`
+  },
+  {
+    title:'Crowding penalty (flow degradation)',
+    body:`When the waiting room exceeds 50 patients or boarding exceeds 10, staff efficiency degrades. Treatment and investigation times increase by up to 30% at peak overcrowding. Formula: penalty = min(30%, (waiting−50)/100 × 15% + (boarding−10)/20 × 15%). This reflects real ED dynamics: doctors get interrupted more, nurses cover more patients, decisions take longer, handovers run over. Winter crisis can trigger 20–25% slowdown at peak, making collapse feel exponential rather than linear.`
+  },
+  {
+    title:'Nurse bay ratios (capacity limits)',
+    body:`Nurse staffing limits how many patients can be actively treated, not just how fast. Resus: strict 1:1 nurse-to-patient ratio — if 2 nurses present, max 2 resus patients. Majors: safe ratio 1:4, crisis threshold 1:7 — once the crisis ratio is hit, no new patients can be assigned to Majors bays. Boarding patients count against Majors nurses. This means short-staffed nights genuinely close bays rather than just slowing things down. Reflects RCN safe staffing guidelines for emergency departments.`
+  },
+  {
+    title:'Investigations (bloods, imaging)',
+    body:`Patients needing investigations are sent after initial assessment. ECG: 8 min, X-ray: 25 min, Bloods: 75 min, CT: 90 min. HCAs reduce investigation times: 2 HCAs = 30% faster, 1 HCA = 15% faster. When results return, the patient is flagged as priority and immediately re-enters the assignment queue. <strong>invDone flag</strong> prevents a patient being sent to investigations twice. Without this flag, patients looped indefinitely and never discharged.`
+  },
+  {
+    title:'Discharge, boarding & ward beds',
+    body:`After treatment, each patient either goes home, is admitted to a ward, or goes to theatre. Admission probability varies by category (Cat1: 85%, Cat2: 60%, Cat3: 35%, Cat4: 5%). If a patient needs admission but no ward bed is free, they board in A&E on a trolley — blocking a bay and costing £400/day. Ward beds are blocked by social care delays (grey dots). The social care block % represents patients medically fit to leave but unable to — no care package available. Boarding drives the 4-hour breach and cost escalation.`
+  },
+  {
+    title:'Theatre pathway',
+    body:`A proportion of patients are listed for emergency surgery (Cat1: 15%, Cat2: 12%, Cat3: 10%). They fast and wait for a theatre slot (2–6 hr). The sim has 3 theatre slots. If all slots are taken, surgical patients board in A&E instead. Each emergency theatre case costs £800 listing fee plus an ongoing overhead. Theatre queue is shown in purple.`
+  },
+  {
+    title:'Shift handovers & absence',
+    body:`Shifts change at 08:00, 16:00, and 00:00. During the 15-minute handover, throughput is paused — no new assignments. Staff absence is re-rolled at each handover. Absence rates: summer 8%, autumn 12%, winter 22%. Absent staff show as faded badges. If the triage nurse is absent, a Band 5/6 nurse covers triage at reduced speed. If no consultant is present (e.g. night shift), FY/PA doctors escalate autonomously.<br><br><strong>Triage nurse protection:</strong> The triage nurse has a reduced absence probability (40% of normal rate) — losing triage entirely on a busy shift is a catastrophic single point of failure that would trigger an immediate escalation in real practice. The sim models this as protected rather than fully immune.`
+  },
+  {
+    title:'Boarding pressure — discharge decisions',
+    body:`When boarding exceeds 5 patients, clinicians come under pressure to discharge borderline admissions rather than admit them. This reflects real NHS practice: when wards are full, Cat3 patients who might ordinarily be admitted for observation get an 'ambulatory care' discharge with GP follow-up instead. The sim reduces effective admission probability by 15% when boarding >5, and 25% when boarding >10. This prevents total department seizure but reflects the clinical risk of premature discharge under pressure.`
+  },
+  {
+    title:'Pre-population at 08:00',
+    body:`The sim starts at 08:00 with a live department state — reflecting overnight handover. Pre-populated patients include boarders (if wards are full), patients awaiting results, and patients in the waiting room. These patients have negative arrivedAt values and are excluded from the door-to-treatment average. The number of pre-populated boarders depends on available ward beds — if beds are free at start, no boarders are created.`
+  },
+  {
+    title:'Cost model — how £ is calculated',
+    body:`Costs accrue every simulation tick and are shown as a running total in the bottom-right KPI.<br><br>
+<strong>Per-minute ongoing costs:</strong><br>
+• Boarding: £0.28/min per boarder (≈ £400/patient/day) — NHS England delayed transfer of care cost estimate<br>
+• Theatre overhead: £0.55/min while theatre is active — NHS reference cost for emergency theatre<br>
+• Agency staff premium: £0.22/min per absent substantive staff member — average agency uplift over substantive pay<br><br>
+<strong>One-off event costs:</strong><br>
+• 12-hour breach: £2,500 per patient — NHS England contractual penalty<br>
+• Theatre listing: £800 per surgical patient — emergency theatre booking cost<br>
+• No-bed boarding: £400 per patient who cannot be admitted — trolley wait cost<br><br>
+<strong>Not modelled (simplification):</strong> base staffing salaries, consumables, diagnostic costs, readmission risk. The sim models the <em>marginal cost of poor flow</em> — the extra cost incurred by boarding, breaches and agency cover above normal operations. NHS target is 95% 4-hour; national average Jan 2025 was 68.1%.`
+  },
+  {
+    title:'Dot clustering (repackZone)',
+    body:`Every 10 ticks, all patient dots in each zone are repositioned to fill from top-left with no gaps. This prevents dots scattering across empty space as patients move between states. Each zone type has its own filter: waiting room uses state=waiting, investigations uses state=investigations, treatment zones use zone assignment. Without repacking, dots drift and accumulate in random positions as the simulation runs.`
+  },
+];
+
+const EFFECTS_DATA=[
+  {
+    group:'Staff & timing',
+    items:[
+      {
+        effect:'triageTime',
+        label:'Triage duration',
+        current:'3 min (nurse) / 6 min (B5 cover)',
+        affects:'Time from waiting room to zone assignment. Every 1 min saved here moves ~20 patients/day faster through the system.',
+        levers:'Triage nurse count, absence rate, AI pre-triage intervention',
+        range:'1–8 min'
+      },
+      {
+        effect:'treatMin',
+        label:'Treatment time per category',
+        current:'Cat1: 90 min / Cat2: 50 min / Cat3: 35 min / Cat4: 18 min',
+        affects:'Core throughput. Reducing Cat3 treatment time by 10 min adds ~15% Majors capacity on a busy day.',
+        levers:'Crowding penalty (adds up to 30%), season multiplier (winter +35%), FY supervision delay (+15–25 min)',
+        range:'Cat1: 60–120 min, Cat4: 12–25 min'
+      },
+      {
+        effect:'supDelay',
+        label:'FY countersignature delay',
+        current:'15–25 min added per FY/PA patient',
+        affects:'Every FY patient needs a registrar or consultant to sign off. With 2 FY doctors and 1 registrar this creates a queue. Removing consultant (night shift) triggers autonomous mode after 20 min wait.',
+        levers:'Consultant presence, registrar count, AI decision support',
+        range:'0–25 min'
+      },
+      {
+        effect:'invMins',
+        label:'Investigation turnaround times',
+        current:'ECG: 8 min / X-ray: 25 min / Bloods: 75 min / CT: 90 min',
+        affects:'Patients in investigations do not count toward doctor capacity caps — but they block bay space and delay discharge. Bloods are the biggest bottleneck on high-volume days.',
+        levers:'HCA count (2 HCAs = 30% faster), crowding penalty slows by up to 30%',
+        range:'ECG: 5–12 min, Bloods: 50–100 min, CT: 60–120 min'
+      },
+      {
+        effect:'crowdingPenalty',
+        label:'Crowding efficiency penalty',
+        current:'0% at normal load → up to 30% slowdown at peak',
+        affects:'Applied to both treatment and investigation times. Triggers when waiting >50 or boarding >10. Makes winter collapse exponential — small overcrowding causes mild slowdown, full crisis causes near-seizure.',
+        levers:'Arrival rate, boarding count, ward bed availability',
+        range:'0–30% time multiplier'
+      },
+      {
+        effect:'shiftHandover',
+        label:'Shift handover pause',
+        current:'15 min at 08:00, 16:00, 00:00 — throughput fully paused',
+        affects:'Three times per day all assignment stops. On a winter crisis day this means 45 min of zero throughput with patients still arriving. Each handover can add 5–8 patients to the waiting room.',
+        levers:'Handover duration, pre-briefing tools, electronic handover systems',
+        range:'5–20 min'
+      },
+    ]
+  },
+  {
+    group:'Nurse ratios & bay capacity',
+    items:[
+      {
+        effect:'resusCap',
+        label:'Resus nurse ratio',
+        current:'Strict 1:1 — max resus patients = active resus nurses',
+        affects:'If 1 nurse is in resus, only 1 patient can be actively treated regardless of how many doctors are available. Most direct capacity limit in the department.',
+        levers:'B5/6 nurse count, absence rate, nurse zone assignment',
+        range:'1:1 fixed (RCN guideline)'
+      },
+      {
+        effect:'majorsCap',
+        label:'Majors nurse ratio',
+        current:'Safe: 1:4 / Crisis threshold: 1:7 (including boarders)',
+        affects:'Once crisis ratio is hit, no new Majors assignments regardless of doctor availability. Boarders count against the ratio — so 5 boarders effectively remove 1 nurse\'s worth of capacity from new patients.',
+        levers:'B5/6 nurse count, boarding count, absence rate',
+        range:'Safe 1:4 → Crisis 1:7 (RCN guidelines)'
+      },
+    ]
+  },
+  {
+    group:'Admission & discharge',
+    items:[
+      {
+        effect:'admitP',
+        label:'Admission probability per category',
+        current:'Cat1: 85% / Cat2: 60% / Cat3: 35% / Cat4: 5% / Cat5: 1%',
+        affects:'Primary driver of boarding. In winter, 60% of Cat2 patients need admission — with wards full, each becomes a boarder blocking a bay for ~8 hours.',
+        levers:'Season (winter increases acuity), boarding pressure discount',
+        range:'Cat1: 80–90%, Cat3: 25–45%'
+      },
+      {
+        effect:'pressureDiscount',
+        label:'Boarding pressure discharge adjustment',
+        current:'Boarding >5: admitP -15% / Boarding >10: admitP -25%',
+        affects:'Clinicians under boarding pressure push borderline admissions home with GP follow-up. Prevents total department seizure but increases readmission risk — not modelled as a cost here.',
+        levers:'Boarding count, ward bed availability, discharge lounge intervention',
+        range:'0–25% reduction in admitP'
+      },
+      {
+        effect:'wardBedsFree',
+        label:'Available ward beds',
+        current:'Set by Ward beds slider minus social care blocked beds',
+        affects:'Single most important bottleneck. Each bed freed reduces boarding by ~1 patient. Going from 0 to 2 free beds can cut boarding count by 40% over a shift.',
+        levers:'Ward beds slider, social care block %, discharge lounge, social care fast-track intervention',
+        range:'0 to cfg.bed'
+      },
+      {
+        effect:'socBlocked',
+        label:'Social care blocked beds',
+        current:'Math.floor(cfg.bed × cfg.soc / 100)',
+        affects:'Patients medically fit to leave but waiting on care packages. In winter at 75% block, 6 of 8 beds are unavailable to A&E. This single number drives more A&E harm than any clinical factor.',
+        levers:'Social care block % slider, social care fast-track intervention',
+        range:'0–75% of total beds in winter'
+      },
+      {
+        effect:'theatreSlots',
+        label:'Theatre slots available',
+        current:'3 emergency slots. Wait: 2–6 hr per patient',
+        affects:'Surgical patients who cannot get a theatre slot board in A&E instead, occupying a bay and counting against nurse ratios. Full theatre (3/3) pushes all subsequent surgical patients to boarding.',
+        levers:'Theatre capacity, time of day (night = reduced availability)',
+        range:'1–4 slots'
+      },
+    ]
+  },
+  {
+    group:'Cost model',
+    items:[
+      {
+        effect:'boardingCost',
+        label:'Boarding cost rate',
+        current:'£0.28/min per boarder (≈ £400/patient/day)',
+        affects:'Primary cost driver on winter days. 35 boarders × £0.28/min × 480 min shift = £4,704 per shift just from boarding.',
+        levers:'Ward bed availability, social care block, boarding pressure discount',
+        range:'Fixed NHS England reference cost'
+      },
+      {
+        effect:'agencyPremium',
+        label:'Agency staff premium',
+        current:'£0.22/min per absent staff member',
+        affects:'With 22% winter absence across 14 rostered staff, ~3 staff absent at any time = £0.66/min = £570/shift in agency premium alone.',
+        levers:'Staff absence rate slider',
+        range:'Fixed average agency uplift'
+      },
+      {
+        effect:'breachCost',
+        label:'12-hour breach penalty',
+        current:'£2,500 per patient exceeding 12 hours in A&E',
+        affects:'Rare on quiet days. On winter crisis with 35 boarders staying 8+ hours, even 3–4 breaches adds £7,500–£10,000 to the daily cost.',
+        levers:'Boarding count, ward bed availability, arrival rate',
+        range:'Fixed NHS England contractual penalty'
+      },
+    ]
+  },
+  {
+    group:'Patient flow',
+    items:[
+      {
+        effect:'arrivalRate',
+        label:'Walk-in arrival rate',
+        current:'Baseline set by slider, modulated by hourly curve (peak 10:00–14:00)',
+        affects:'Every +4 arrivals/hr adds ~50 patients per day. The hourly curve means the midday peak is ~3× the overnight trough regardless of the baseline setting.',
+        levers:'Arrivals/hr slider, seasonal variation, bank holiday multipliers',
+        range:'4–28/hr baseline'
+      },
+      {
+        effect:'ambRate',
+        label:'Ambulance arrival rate',
+        current:'Bypass triage — go direct to Resus or Majors',
+        affects:'Ambulance patients are always Cat1–3 and always need bays immediately. 5 ambulances/hr means ~80 direct bay admissions per day, all competing with walk-in Cat1–2 for resus and majors space.',
+        levers:'Ambul/hr slider',
+        range:'1–6/hr'
+      },
+      {
+        effect:'absRate',
+        label:'Staff absence rate',
+        current:'Summer: 8% / Autumn: 12% / Winter: 22% (re-rolled each shift)',
+        affects:'Each shift handover re-rolls absence for every staff member. Winter 22% across 14 staff means statistically 3 absent per shift. Cascade effect: absent consultant → FY queue → slower throughput → more overcrowding → crowding penalty kicks in.',
+        levers:'Staff absence slider, triage nurse protection (40% of normal rate)',
+        range:'0–30%'
+      },
+    ]
+  },
+];
+
+
+const TICK=100,SIM_DUR=1440,REAL_S=75,TICKS_TOT=REAL_S*1000/TICK,SPT=SIM_DUR/TICKS_TOT;
+const HOURLY=[0.35,0.25,0.2,0.2,0.28,0.45,0.7,0.9,1.15,1.35,1.3,1.2,1.1,1.05,1.0,1.0,1.05,1.1,1.0,0.9,0.8,0.7,0.55,0.42];
+const SEASON_MUL={summer:{treatMul:1.0,catShift:0,arrMul:0.9},autumn:{treatMul:1.1,catShift:0.03,arrMul:1.0},winter:{treatMul:1.35,catShift:0.07,arrMul:1.3}};
+const IMG_TYPES=[
+  {label:'X-ray',mins:25},
+  {label:'Bloods',mins:75},
+  {label:'CT',mins:90},
+  {label:'ECG',mins:8},
+];
+const BASE_CATS=[
+  {name:'Cat1',color:'#E24B4A',treatMin:90,pct:0.03,zone:'resus',admitP:0.85,needsInv:false,surgP:0.15},
+  {name:'Cat2',color:'#E24B4A',treatMin:50,pct:0.09,zone:'resus',admitP:0.60,needsInv:true,img:2,surgP:0.12},
+  {name:'Cat3',color:'#EF9F27',treatMin:35,pct:0.23,zone:'majors',admitP:0.35,needsInv:true,img:1,surgP:0.10},
+  {name:'Cat4',color:'#1D9E75',treatMin:18,pct:0.38,zone:'minors',admitP:0.05,needsInv:true,img:0,surgP:0},
+  {name:'Cat5',color:'#1D9E75',treatMin:10,pct:0.27,zone:'minors',admitP:0.02,needsInv:false,surgP:0},
+];
+const ZONES_DEF=[
+  // Arrival strip (thin)
+  {id:'ambay',    label:'Amb bay',           x:0,  y:0,  w:8,  h:12, cls:'za'},
+  {id:'entrance', label:'In',               x:8,  y:0,  w:7,  h:12, cls:''},
+  {id:'reception',label:'Reception',       x:15, y:0,  w:13, h:12, cls:''},
+  {id:'triage',   label:'Triage',          x:28, y:0,  w:11, h:12, cls:''},
+  // Waiting room largest, Resus compact, Majors/Minors equal
+  {id:'waiting',  label:'Waiting room',    x:0,  y:12, w:58, h:30, cls:'zw'},
+  {id:'resus',    label:'Resus',           x:0,  y:42, w:58, h:11, cls:'zr'},
+  {id:'majors',   label:'Majors',          x:0,  y:53, w:58, h:24, cls:'zm'},
+  {id:'minors',   label:'Minors',          x:0,  y:77, w:58, h:23, cls:'zn'},
+  // Right column
+  {id:'invest',   label:'Awaiting results', x:80, y:0,  w:20, h:28, cls:''},
+  {id:'theatre',  label:'Theatre queue',    x:80, y:28, w:20, h:18, cls:'zth'},
+  {id:'discharge',label:'Discharge/home',  x:80, y:46, w:20, h:17, cls:''},
+  {id:'boarding', label:'Boarding — no bed',x:80, y:63, w:20, h:17, cls:'zb'},
+  {id:'ward',     label:'Ward beds',        x:80, y:80, w:20, h:20, cls:'zward'},
+];
+const ZM={};ZONES_DEF.forEach(z=>ZM[z.id]=z);
+
+// ─────────────────────────────────────────────────────────────────────────────
+// SCENARIOS — edit this block to change any scenario without touching sim code
+// Keys: doc=registrars, con=consultants, fy1=FY/PA doctors, b7=ENPs,
+//       b5=Band5/6 nurses, hca=healthcare assistants,
+//       bed=ward beds, arr=walk-in arrivals/hr, amb=ambulances/hr,
+//       abs=staff absence %, soc=social care bed block %,
+//       season=label only (summer|autumn|winter)
+// ─────────────────────────────────────────────────────────────────────────────
+const SCENARIOS = {
+  normal: {
+    label: 'Quiet day',
+    season: 'summer',
+    doc: 2, con: 1, fy1: 2, b7: 1, b5: 6, hca: 2,
+    bed: 8, arr: 12, amb: 2, abs: 8, soc: 25,
+    description: 'Typical summer weekday. Moderate demand, reasonable staffing.'
+  },
+  winter: {
+    label: 'Winter crisis',
+    season: 'winter',
+    doc: 2, con: 1, fy1: 2, b7: 1, b5: 6, hca: 2,
+    bed: 8, arr: 20, amb: 5, abs: 22, soc: 75,
+    description: 'Winter pressure. High arrivals, high absence, wards nearly full with social care delays.'
+  },
+  monday: {
+    label: 'Monday rush',
+    season: 'autumn',
+    doc: 3, con: 1, fy1: 2, b7: 2, b5: 6, hca: 3,
+    bed: 8, arr: 16, amb: 3, abs: 12, soc: 45,
+    description: 'Monday morning surge. Weekend backlog, full day staff, above-average demand.'
+  },
+  night: {
+    label: 'Night shift',
+    season: 'winter',
+    doc: 1, con: 0, fy1: 2, b7: 1, b5: 3, hca: 1,
+    bed: 8, arr: 8, amb: 2, abs: 15, soc: 75,
+    description: 'Night shift. Reduced staff, no consultant, lower arrivals but wards still blocked.'
+  }
+};
+
+let cfg={doc:2,con:1,fy1:2,b7:1,b5:6,hca:2,bed:8,arr:12,amb:2,abs:8,soc:25};
+let activeEffects={triageTimeMul:1,invTimeMul:1,treatTimeMul:1,handoverMins:15,admitPMul:1,crowdThreshold:50,boardingCostMul:1,supDelayMul:1};
+
+const INTERVENTIONS=[
+  {
+    id:'ai_triage',
+    label:'AI pre-triage',
+    icon:'🤖',
+    cost:15000,
+    tagline:'Patients answer symptom questions on their phone before seeing the nurse',
+    effects:{ triageTimeMul:0.5, supDelayMul:0.85, invTimeMul:0.92 },
+    detail:'Triage time halved. Better pre-populated notes reduce FY supervision delay. Investigations ordered earlier, reducing turnaround.'
+  },
+  {
+    id:'digital_waiting',
+    label:'Digital waiting room',
+    icon:'📱',
+    cost:8000,
+    tagline:'Patients get live queue position and health info on their phone',
+    effects:{ crowdThreshold:60, triageTimeMul:0.9 },
+    detail:'Reduces front-desk interruptions and anxiety-driven re-presentations. Crowding penalty threshold raised — patients self-manage better.'
+  },
+  {
+    id:'wearables',
+    label:'Wearable monitoring',
+    icon:'⌚',
+    cost:22000,
+    tagline:'Continuous vitals from loaner devices catch deterioration early',
+    effects:{ admitPMul:0.9, treatTimeMul:0.95 },
+    detail:'Prevents Cat3→Cat2 escalations. Catches deterioration before it becomes a crash. Reduces emergency resus interventions.'
+  },
+  {
+    id:'discharge_lounge',
+    label:'Discharge lounge',
+    icon:'🛋️',
+    cost:35000,
+    tagline:'Medically fit patients move to a lounge, freeing bays faster',
+    effects:{ boardingCostMul:0.65, admitPMul:0.88 },
+    detail:'Patients awaiting discharge move out of A&E bays into a supervised lounge. Reduces boarding cost and frees bays for new arrivals sooner.'
+  },
+  {
+    id:'social_fasttrack',
+    label:'Social care fast-track',
+    icon:'🏠',
+    cost:45000,
+    tagline:'Dedicated liaison speeds up care package and placement decisions',
+    effects:{ boardingCostMul:0.7 },
+    detail:'Social worker embedded in A&E resolves care packages same-day for suitable patients. Directly reduces social care bed blocking.',
+    sliderOverride:{ soc: -30 }
+  },
+  {
+    id:'extra_hca',
+    label:'Extra HCA',
+    icon:'👤',
+    cost:28000,
+    tagline:'An additional healthcare assistant reduces investigation turnaround',
+    effects:{ invTimeMul:0.75 },
+    detail:'Third HCA added. Investigations run 25% faster across the department. Nurses freed from sample collection for clinical care.',
+    sliderOverride:{ hca: 1 }
+  },
+];
+
+let activeInterventions=new Set();
+function applyEffects(){
+  const base=(cfg.effects)||{};
+  // Start with scenario effects
+  activeEffects=Object.assign({triageTimeMul:1,invTimeMul:1,treatTimeMul:1,handoverMins:15,admitPMul:1,crowdThreshold:50,boardingCostMul:1,supDelayMul:1},base);
+  // Multiply in active intervention effects
+  activeInterventions.forEach(id=>{
+    const inv=INTERVENTIONS.find(i=>i.id===id);
+    if(!inv)return;
+    Object.keys(inv.effects).forEach(k=>{
+      if(k in activeEffects) activeEffects[k]*=inv.effects[k];
+      else activeEffects[k]=inv.effects[k];
+    });
+  });
+  // Apply slider overrides from BASE scenario values (not cumulative cfg)
+  // Reset to base first, then apply all active overrides
+  const scenBase=SCENARIOS[currentScenario]||SCENARIOS.normal;
+  activeInterventions.forEach(id=>{
+    const inv=INTERVENTIONS.find(i=>i.id===id);
+    if(!inv||!inv.sliderOverride)return;
+    Object.keys(inv.sliderOverride).forEach(k=>{
+      const base=scenBase[k]||0;
+      const delta=inv.sliderOverride[k]||0;
+      cfg[k]=Math.max(0,base+delta);
+      const sl=document.getElementById('sl-'+k);
+      const vl=document.getElementById('v-'+k);
+      if(sl)sl.value=cfg[k];
+      if(vl)vl.textContent=cfg[k];
+    });
+  });
+  // If no intervention overrides a slider, restore to scenario base
+  const overriddenKeys=new Set();
+  activeInterventions.forEach(id=>{
+    const inv=INTERVENTIONS.find(i=>i.id===id);
+    if(inv&&inv.sliderOverride) Object.keys(inv.sliderOverride).forEach(k=>overriddenKeys.add(k));
+  });
+  ['soc','hca'].forEach(k=>{
+    if(!overriddenKeys.has(k)){
+      cfg[k]=scenBase[k];
+      const sl=document.getElementById('sl-'+k);
+      const vl=document.getElementById('v-'+k);
+      if(sl)sl.value=cfg[k];
+      if(vl)vl.textContent=cfg[k];
+    }
+  });
+}
+let theatreSlots=3,theatreAcc=0;
+let season='summer';
+let simTime=0,running=false,iid=null,nid=1,logs=[];
+let totalCostBaseline=0,avgWaitBaseline=0,baselineBreaches=0,baseline4hr=0,baselineBoarding=0;
+let patients=[],staff=[];
+let totalDisc=0,totalWait=0,within4=0,breaches12=0,wardBedsFree=0;
+let arrAcc=0,ambAcc=0,shiftHandover=false,shiftHandoverEnd=0;
+let totalCost=0,tickCount=0;
+let chartData={waiting:[],boarding:[],inv:[],labels:[]};
+
+const floor=document.getElementById('floor');
+const chartCanvas=document.getElementById('chart');
+const ctx=chartCanvas.getContext('2d');
+
+function fw(){return floor.clientWidth||400}
+function fh(){return floor.clientHeight||400}
+function sx(p){return p/100*fw()}
+function sy(p){return p/100*fh()}
+
+function ptInZone(zid,slot,ox,oy){
+  const z=ZM[zid];
+  const cols=Math.max(1,Math.floor(sx(z.w)/14));
+  const r=Math.floor(slot/cols),c=slot%cols;
+  return{x:sx(z.x)+5+c*13+(ox||0),y:sy(z.y)+14+r*13+(oy||0)};
+}
+
+function renderZones(){
+  floor.querySelectorAll('.zone').forEach(e=>e.remove());
+  ZONES_DEF.forEach(z=>{
+    const d=document.createElement('div');
+    d.className='zone '+(z.cls||'');
+    d.style.cssText=`left:${sx(z.x)}px;top:${sy(z.y)}px;width:${sx(z.w)}px;height:${sy(z.h)}px`;
+    d.textContent=z.label;
+    floor.appendChild(d);
+  });
+}
+
+function repackZone(zid){
+  // Re-slot all patients in a zone to fill top-left with no gaps
+  let inZone;
+  if(zid==='waiting'){
+    // Waiting patients are in 'waiting' state regardless of their triage zone
+    inZone=patients.filter(p=>p.state==='waiting');
+  } else if(zid==='invest'){
+    inZone=patients.filter(p=>p.state==='investigations');
+  } else if(zid==='discharge'){
+    inZone=patients.filter(p=>p.state==='discharged');
+  } else if(zid==='boarding'){
+    inZone=patients.filter(p=>p.state==='boarding');
+  } else {
+    // Treatment zones: triaged or treating patients assigned to this zone
+    inZone=patients.filter(p=>['triaged','treating'].includes(p.state)&&p.zone===zid&&p.state!=='theatre');
+  }
+  const dotSize=inZone.length>40?7:inZone.length>25?9:11;
+  inZone.forEach((p,i)=>{
+    const pos=ptInZone(zid,i);
+    mv(p.el,pos.x,pos.y);
+    p.el.style.width=dotSize+'px';
+    p.el.style.height=dotSize+'px';
+  });
+}
+
+function mkDot(color){
+  const e=document.createElement('div');
+  e.className='dot';e.style.background=color;
+  floor.appendChild(e);return e;
+}
+function mkStf(cls,txt){
+  const e=document.createElement('div');
+  e.className='stf '+cls;e.textContent=txt;
+  floor.appendChild(e);return e;
+}
+function mv(el,x,y){if(el){el.style.left=x+'px';el.style.top=y+'px';}}
+
+function effectiveBeds(){
+  const blocked=Math.floor(cfg.bed*(cfg.soc/100));
+  return Math.max(0,cfg.bed-blocked);
+}
+
+function buildStaff(){
+  staff.forEach(s=>s.el&&s.el.remove());staff=[];
+  const absRate=cfg.abs/100;
+  function isAbsent(){return Math.random()<absRate;}
+  const rp=ptInZone('reception',0);
+  const re=mkStf('sH','Rx');mv(re,rp.x,rp.y);
+  const rabsent=isAbsent();if(rabsent)re.classList.add('absent');
+  staff.push({id:'rec',type:'rec',el:re,busy:false,pid:null,zone:'reception',absent:rabsent});
+  const tp=ptInZone('triage',0);
+  const te=mkStf('s7','T');mv(te,tp.x,tp.y);
+  // Triage nurse: half absence rate — critical single point of failure
+  const tabsent=Math.random()<(cfg.abs/100)*0.4;if(tabsent)te.classList.add('absent');
+  staff.push({id:'tri',type:'tri',el:te,busy:false,pid:null,zone:'triage',absent:tabsent});
+  for(let i=0;i<cfg.con;i++){
+    const pp=ptInZone('majors',i+6);
+    const e=mkStf('sC','Co');mv(e,pp.x,pp.y);
+    const ab=isAbsent();if(ab)e.classList.add('absent');
+    staff.push({id:'con'+i,type:'con',el:e,busy:false,pid:null,zone:'majors',patients:[],absent:ab});
+  }
+  for(let i=0;i<cfg.doc;i++){
+    const z=i===0?'resus':'majors';
+    const pp=ptInZone(z,i+4);
+    const e=mkStf('sR','Dr');mv(e,pp.x,pp.y);
+    const ab=isAbsent();if(ab)e.classList.add('absent');
+    staff.push({id:'dr'+i,type:'doc',el:e,busy:false,pid:null,zone:z,patients:[],absent:ab});
+  }
+  for(let i=0;i<cfg.b7;i++){
+    const pp=ptInZone('minors',i);
+    const e=mkStf('s7','B7');mv(e,pp.x,pp.y);
+    const ab=isAbsent();if(ab)e.classList.add('absent');
+    staff.push({id:'b7'+i,type:'b7',el:e,busy:false,pid:null,zone:'minors',absent:ab});
+  }
+  for(let i=0;i<cfg.b5;i++){
+    const z=i<3?'majors':'resus';
+    const pp=ptInZone(z,i+8);
+    const e=mkStf('s6','B5');mv(e,pp.x,pp.y);
+    const ab=isAbsent();if(ab)e.classList.add('absent');
+    staff.push({id:'b5'+i,type:'b5',el:e,busy:false,pid:null,zone:z,absent:ab});
+  }
+  for(let i=0;i<cfg.fy1;i++){
+    const z='majors';
+    const pp=ptInZone(z,i+12);
+    // PA fills same role as FY2 — label alternates
+    const label=i%2===0?'FY':'PA';
+    const e=mkStf('sFY',label);mv(e,pp.x,pp.y);
+    const ab=isAbsent();if(ab)e.classList.add('absent');
+    staff.push({id:'fy'+i,type:'fy1',el:e,busy:false,pid:null,zone:z,patients:[],absent:ab});
+  }
+  // HCAs — speed up investigations (observations, ECGs, bloods)
+  for(let i=0;i<cfg.hca;i++){
+    const z=i===0?'majors':'resus';
+    const pp=ptInZone(z,i+16);
+    const e=mkStf('sHCA','HCA');mv(e,pp.x,pp.y);
+    const ab=isAbsent();if(ab)e.classList.add('absent');
+    staff.push({id:'hca'+i,type:'hca',el:e,busy:false,pid:null,zone:z,absent:ab});
+  }
+}
+
+function getCats(){
+  const sm=SEASON_MUL[season]||SEASON_MUL.summer;
+  return BASE_CATS.map((c,i)=>{
+    let pct=c.pct;
+    if(i<2)pct=Math.min(c.pct+sm.catShift*0.5,0.18);
+    else if(i===2)pct=Math.min(c.pct+sm.catShift,0.35);
+    else pct=Math.max(c.pct-sm.catShift*0.8,0.1);
+    const imgType=c.img!=null?IMG_TYPES[c.img]:null;
+    const invMins=imgType?imgType.mins*(0.7+Math.random()*0.6):60;
+    return {...c,pct,treatMin:c.treatMin*sm.treatMul,imgLabel:imgType?imgType.label:null,invMins};
+  });
+}
+
+function pickCat(forAmb){
+  const cats=getCats();
+  if(forAmb){const r=Math.random();return r<0.4?cats[0]:r<0.8?cats[1]:cats[2];}
+  const r=Math.random();let acc=0;
+  for(const c of cats){acc+=c.pct;if(r<acc)return c;}
+  return cats[cats.length-1];
+}
+
+function prePopulate(){
+  const sm=SEASON_MUL[season]||SEASON_MUL.summer;
+  // boarders — only spawn if ward beds are actually full
+  const nBoardWanted=season==='winter'?6:season==='autumn'?4:3;
+  const nBoard=Math.min(nBoardWanted, Math.max(0, effectiveBeds()-wardBedsFree));
+  for(let i=0;i<nBoard;i++){
+    const cat=i<2?getCats()[0]:getCats()[1];
+    const el=mkDot('#C4956A');
+    el.style.boxShadow='0 0 0 2px #A0724A';
+    const hoursAgo=8+Math.random()*4;
+    const pos=ptInZone('boarding',i);mv(el,pos.x,pos.y);
+    el.classList.add('boarding');
+    const pat={id:nid++,cat,el,state:'boarding',arrivedAt:-hoursAgo*60,triageAt:-hoursAgo*60+5,treatStart:-hoursAgo*60+30,treatEnd:0,invEnd:null,waitMins:30,zone:'boarding',admitted:false,boarding:true,isAmb:false};
+    patients.push(pat);
+    wardBedsFree=Math.max(0,wardBedsFree-1);
+  }
+  // patients mid-investigation — arrived 1-3 hrs ago
+  const nInv=season==='winter'?7:4;
+  for(let i=0;i<nInv;i++){
+    const cat=i<3?getCats()[1]:getCats()[2];
+    const el=mkDot(cat.color);el.style.opacity='0.6';
+    const minsAgo=60+Math.random()*120;
+    const invRemain=20+Math.random()*40;
+    const pos=ptInZone('invest',i);mv(el,pos.x,pos.y);
+    const pat={id:nid++,cat,el,state:'investigations',arrivedAt:-minsAgo,triageAt:-minsAgo+5,treatStart:-minsAgo+15,treatEnd:null,invEnd:invRemain,waitMins:15,zone:cat.zone,admitted:false,boarding:false,isAmb:false};
+    patients.push(pat);
+  }
+  // patients waiting — arrived 30-120 mins ago, triaged
+  const nWait=season==='winter'?12:7;
+  for(let i=0;i<nWait;i++){
+    const cat=getCats()[i<3?2:i<7?3:4];
+    const el=mkDot(cat.color);
+    const minsAgo=30+Math.random()*90;
+    const pos=ptInZone('waiting',i);mv(el,pos.x,pos.y);
+    const pat={id:nid++,cat,el,state:'triaged',arrivedAt:-minsAgo,triageAt:-minsAgo+8,treatStart:null,treatEnd:null,invEnd:null,waitMins:0,zone:cat.zone,admitted:false,boarding:false,isAmb:false};
+    patients.push(pat);
+  }
+  // 2-3 actively being treated
+  for(let i=0;i<3;i++){
+    const cat=getCats()[i===0?0:1];
+    const el=mkDot(cat.color);
+    const treatLeft=20+Math.random()*30;
+    const pos=ptInZone(cat.zone,i);mv(el,pos.x,pos.y);
+    const pat={id:nid++,cat,el,state:'treating',arrivedAt:-90,triageAt:-85,treatStart:-40,treatEnd:treatLeft,invEnd:null,waitMins:40,zone:cat.zone,admitted:false,boarding:false,isAmb:false};
+    patients.push(pat);
+  }
+  wardBedsFree=effectiveBeds()-nBoard;
+  if(wardBedsFree<0)wardBedsFree=0;
+  addLog(`08:00 handover: ${nBoard} boarders, ${nInv} awaiting results, ${nWait} in queue — day shift inherits a live department`);
+  refreshStats();
+}
+
+function spawnWalk(){
+  const cat=pickCat(false);
+  const el=mkDot(cat.color);
+  const pos=ptInZone('entrance',patients.filter(x=>x.state==='arriving').length%4);
+  mv(el,pos.x,pos.y);
+  const pat={id:nid++,cat,el,state:'arriving',arrivedAt:simTime,triageAt:null,treatStart:null,treatEnd:null,invEnd:null,waitMins:0,zone:'entrance',admitted:false,boarding:false,isAmb:false};
+  patients.push(pat);
+  setTimeout(()=>toReception(pat),200+Math.random()*300);
+}
+
+function spawnAmb(){
+  const cat=pickCat(true);
+  const el=mkDot(cat.color);
+  el.style.border='2px solid #E24B4A';
+  const pos=ptInZone('ambay',patients.filter(x=>x.isAmb&&x.state==='arriving').length%3);
+  mv(el,pos.x,pos.y);
+  const pat={id:nid++,cat,el,state:'arriving',arrivedAt:simTime,triageAt:null,treatStart:null,treatEnd:null,invEnd:null,waitMins:0,zone:'ambay',admitted:false,boarding:false,isAmb:true};
+  patients.push(pat);
+  setTimeout(()=>toResusDir(pat),500);
+}
+
+function toReception(pat){
+  if(!floor.contains(pat.el))return;
+  pat.state='reception';pat.zone='reception';
+  const slot=patients.filter(p=>p.state==='reception').length;
+  const pos=ptInZone('reception',slot+1);mv(pat.el,pos.x,pos.y);
+  const recStaff=staff.find(s=>s.type==='rec'&&!s.absent);
+  const delay=TICK*(recStaff?2+Math.random()*3:5+Math.random()*8)/SPT;
+  setTimeout(()=>toWaiting(pat),delay);
+}
+
+function toWaiting(pat){
+  if(!floor.contains(pat.el))return;
+  pat.state='waiting';pat.zone='waiting';
+  const slot=patients.filter(p=>p.state==='waiting').length;
+  const pos=ptInZone('waiting',slot);mv(pat.el,pos.x,pos.y);
+  refreshStats();
+}
+
+function toResusDir(pat){
+  if(!floor.contains(pat.el))return;
+  pat.state='triaged';pat.triageAt=simTime;pat.zone='resus';
+  const slot=patients.filter(p=>p.state==='triaged'&&p.zone==='resus').length;
+  const pos=ptInZone('resus',slot);mv(pat.el,pos.x,pos.y);
+  refreshStats();
+}
+
+function tryTriage(){
+  if(shiftHandover)return;
+  // Primary: triage nurse. Fallback: any free B5/6 nurse covers at reduced speed
+  let triNurse=staff.find(s=>s.type==='tri'&&!s.busy&&!s.absent);
+  let triCover=false;
+  if(!triNurse){
+    triNurse=staff.find(s=>s.type==='b5'&&!s.busy&&!s.absent);
+    triCover=true;
+  }
+  if(!triNurse)return;
+  const queue=patients.filter(p=>p.state==='waiting').sort((a,b)=>{
+    const pri={Cat1:0,Cat2:1,Cat3:2,Cat4:3,Cat5:4};
+    return(pri[a.cat.name]||3)-(pri[b.cat.name]||3)||a.arrivedAt-b.arrivedAt;
+  });
+  if(!queue.length)return;
+  const pat=queue[0];
+  triNurse.busy=true;triNurse.pid=pat.id;
+  pat.state='triage';pat.zone='triage';
+  pat.triageEnd=simTime+(triCover?6:3)*activeEffects.triageTimeMul; // cover nurse takes longer
+  mv(pat.el,ptInZone('triage',1).x,ptInZone('triage',1).y);
+}
+
+function completeTriage(){
+  // Complete any triage that is done this tick
+  patients.filter(p=>p.state==='triage'&&p.triageEnd&&simTime>=p.triageEnd).forEach(pat=>{
+    const tri=staff.find(s=>s.type==='tri'&&s.pid===pat.id);
+    if(tri){tri.busy=false;tri.pid=null;}
+    pat.triageAt=simTime;pat.state='triaged';pat.zone=pat.cat.zone;
+    const slot=patients.filter(p=>p.state==='triaged'&&p.zone===pat.zone).length;
+    mv(pat.el,ptInZone(pat.zone,slot).x,ptInZone(pat.zone,slot).y);
+  });
+}
+
+function crowdingPenalty(){
+  // When dept overcrowded, staff efficiency drops — treatment/investigation times increase
+  const waiting=patients.filter(p=>p.state==='waiting').length;
+  const boarding=patients.filter(p=>p.state==='boarding').length;
+  const pressure=Math.max(0, (waiting-activeEffects.crowdThreshold)/100) + Math.max(0, (boarding-10)/20);
+  // Max 30% slowdown at extreme overcrowding
+  return 1 + Math.min(0.30, pressure*0.15);
+}
+
+function tryAssign(){
+  if(shiftHandover)return;
+
+  // Count only ACTIVELY TREATING patients for capacity (not those in investigations)
+  function activePts(s){
+    if(!s.patients)return s.busy?1:0;
+    return s.patients.filter(id=>patients.find(p=>p.id===id&&p.state==='treating')).length;
+  }
+
+  // Priority sort: results-back first, then acuity, then wait time
+  function qSort(a,b){
+    if(a.resultsBack!==b.resultsBack)return a.resultsBack?-1:1;
+    const pri={Cat1:0,Cat2:1,Cat3:2,Cat4:3,Cat5:4};
+    return(pri[a.cat.name]||3)-(pri[b.cat.name]||3)||a.arrivedAt-b.arrivedAt;
+  }
+
+  // Resus cap: max 8. Overflow least urgent Cat2 → majors
+  const resusPts=patients.filter(p=>p.state==='triaged'&&p.zone==='resus');
+  if(resusPts.length>8){
+    resusPts.sort((a,b)=>{const pri={Cat1:0,Cat2:1};return(pri[b.cat.name]||0)-(pri[a.cat.name]||0);});
+    for(let i=8;i<resusPts.length;i++){
+      resusPts[i].zone='majors';
+      mv(resusPts[i].el,ptInZone('majors',patients.filter(p=>p.state==='triaged'&&p.zone==='majors').length).x,
+         ptInZone('majors',0).y);
+    }
+  }
+
+  // Build queues
+  const resusQ=patients.filter(p=>p.state==='triaged'&&p.zone==='resus').sort(qSort);
+  const majorsQ=patients.filter(p=>p.state==='triaged'&&p.zone==='majors').sort(qSort);
+  const minorsQ=patients.filter(p=>p.state==='triaged'&&p.zone==='minors').sort(qSort);
+
+  // Nurse ratio limits — caps how many patients can be actively treated per zone
+  const resusNurses=Math.max(0,staff.filter(s=>s.type==='b5'&&!s.absent&&s.zone==='resus').length);
+  const majorsNurses=Math.max(0,staff.filter(s=>s.type==='b5'&&!s.absent&&s.zone==='majors').length);
+  const resusCurrent=patients.filter(p=>p.state==='treating'&&p.zone==='resus').length;
+  const majorsCurrent=patients.filter(p=>['treating','boarding'].includes(p.state)&&p.zone==='majors').length
+    +patients.filter(p=>p.state==='boarding').length;
+  // Resus: strict 1:1. Majors: safe 1:4, crisis 1:7
+  const resusCap=Math.max(1,resusNurses);
+  const majorsSafeCap=Math.max(2,majorsNurses*4);
+  const majorsCrisisCap=Math.max(4,majorsNurses*7);
+  const majorsAtCrisis=majorsCurrent>=majorsCrisisCap;
+  const resusAtCap=resusCurrent>=resusCap;
+
+  function takeFrom(queues){
+    for(const q of queues){if(q.length){const p=q.shift();queues.forEach(qq=>{const i=qq.indexOf(p);if(i>-1)qq.splice(i,1);});return p;}}
+    return null;
+  }
+
+  // Registrars — max 3 active, but blocked by nurse ratios
+  for(const reg of staff.filter(s=>s.type==='doc'&&!s.absent&&activePts(s)<3)){
+    // Try resus first unless at nurse cap
+    let pat=null;
+    if(!resusAtCap&&resusQ.length){pat=resusQ.shift();}
+    else if(!majorsAtCrisis&&majorsQ.length){pat=majorsQ.shift();}
+    else if(resusQ.length){pat=resusQ.shift();} // allow resus overflow in emergency
+    if(pat)assignP(reg,pat,false);
+  }
+
+  // Consultants — max 4 active, roam to longest queue, respect nurse caps
+  for(const con of staff.filter(s=>s.type==='con'&&!s.absent&&activePts(s)<4)){
+    let pat=null;
+    if(!majorsAtCrisis&&majorsQ.length)pat=majorsQ.shift();
+    else if(!resusAtCap&&resusQ.length)pat=resusQ.shift();
+    if(pat)assignP(con,pat,false);
+  }
+
+  // FY/PA — max 2 active, Cat3/4 only, supervised unless senior absent or long wait
+  const hasSenior=staff.some(s=>(s.type==='doc'||s.type==='con')&&!s.absent);
+  for(const fy of staff.filter(s=>s.type==='fy1'&&!s.absent&&activePts(s)<2)){
+    const eligible=majorsQ.filter(p=>p.cat.name==='Cat3'||p.cat.name==='Cat4');
+    if(!eligible.length)continue;
+    const pat=eligible[0];
+    majorsQ.splice(majorsQ.indexOf(pat),1);
+    const autonomous=!hasSenior||(simTime-pat.arrivedAt>20);
+    assignP(fy,pat,!autonomous);
+  }
+
+  // ENPs — one patient at a time, minors only
+  for(const enp of staff.filter(s=>s.type==='b7'&&!s.busy&&!s.absent)){
+    if(!minorsQ.length)break;
+    assignP(enp,minorsQ.shift(),false);
+  }
+
+  // Registrar overflow to minors if queue>8 and registrar has <2 active
+  if(minorsQ.length>8){
+    for(const reg of staff.filter(s=>s.type==='doc'&&!s.absent&&activePts(s)<2)){
+      if(!minorsQ.length)break;
+      assignP(reg,minorsQ.shift(),false);
+    }
+  }
+
+  // FY/PA overflow to minors if minors very long and majors empty
+  if(minorsQ.length>15&&!majorsQ.length){
+    for(const fy of staff.filter(s=>s.type==='fy1'&&!s.absent&&activePts(s)<2)){
+      if(!minorsQ.length)break;
+      assignP(fy,minorsQ.shift(),false);
+    }
+  }
+}
+
+function assignP(prov,pat,supervised){
+  if(prov.patients)prov.patients.push(pat.id);else{prov.busy=true;prov.pid=pat.id;}
+  pat.state='treating';pat.treatStart=simTime;
+  // Only record door-to-treatment on first contact, not post-investigation reassignment
+  if(!pat.invDone&&pat.arrivedAt>=0)pat.waitMins=simTime-pat.arrivedAt;
+  pat.supervised=!!supervised;pat.resultsBack=false;
+  // slot = number of patients already visually placed in this zone
+  const slot=patients.filter(p=>p.state==='treating'&&p.zone===pat.zone&&p.id!==pat.id).length;
+  mv(pat.el,ptInZone(pat.zone,slot).x,ptInZone(pat.zone,slot).y);
+  mv(prov.el,ptInZone(pat.zone,slot).x+12,ptInZone(pat.zone,slot).y);
+  // FY1/FY2 need consultant sign-off — adds 15-25 min to treatment
+  const supDelay=supervised?(15+Math.random()*25)*activeEffects.supDelayMul:0;
+  if(pat.cat.needsInv&&!pat.invDone){
+    // First time seeing this patient — send for investigations
+    const initMins=5+Math.random()*8+supDelay*0.3;
+    const hcaActive=staff.filter(s=>s.type==='hca'&&!s.absent).length;
+    const hcaMul=hcaActive>=2?0.7:hcaActive===1?0.85:1.0;
+    const crowdMul=crowdingPenalty();
+    pat.invEnd=simTime+initMins+pat.cat.invMins*(0.7+Math.random()*0.6)*hcaMul*crowdMul*activeEffects.invTimeMul;
+    setTimeout(()=>sendToInv(pat,prov),TICK*initMins/SPT);
+  }else{
+    // Results back or no investigations needed — set treatment end time
+    const crowdMul=crowdingPenalty();
+    pat.treatEnd=simTime+pat.cat.treatMin*(0.7+Math.random()*0.6)*crowdMul*activeEffects.treatTimeMul+supDelay;
+  }
+  const role=prov.type==='con'?'Consultant':prov.type==='doc'?'Registrar':prov.type==='fy1'?'FY2 doctor':'ENP';
+  const imgNote=pat.cat.imgLabel?` → ${pat.cat.imgLabel} ordered`:'';
+  addLog(`${role} sees ${pat.cat.name} #${pat.id} (wait:${Math.round(Math.max(0,pat.waitMins))}min)${imgNote}`);
+  refreshStats();
+}
+
+function sendToInv(pat,prov){
+  if(pat.state!=='treating')return;
+  pat.state='investigations';pat.invType=pat.cat.imgLabel||'Bloods';
+  const slot=patients.filter(p=>p.state==='investigations').length;
+  mv(pat.el,ptInZone('invest',slot).x,ptInZone('invest',slot).y);
+  pat.el.style.opacity='0.6';
+  pat.el.title=pat.invType;
+  if(prov.patients){const i=prov.patients.indexOf(pat.id);if(i>-1)prov.patients.splice(i,1);}
+  else{prov.busy=false;prov.pid=null;}
+  addLog(`#${pat.id} waiting for ${pat.invType} (~${Math.round(pat.cat.invMins)} min)`);
+  refreshStats();
+}
+
+function checkResultsBack(){
+  let anyBack=false;
+  patients.filter(p=>p.state==='investigations'&&simTime>=p.invEnd).forEach(pat=>{
+    pat.state='triaged';pat.resultsBack=true;pat.invDone=true; // mark done so assignP won't re-investigate
+    pat.el.style.opacity='1';
+    const slot=patients.filter(p=>p.state==='triaged'&&p.zone===pat.zone).length;
+    mv(pat.el,ptInZone(pat.zone,slot).x,ptInZone(pat.zone,slot).y);
+    addLog(`Results back — #${pat.id} ${pat.cat.name} ready for review`);
+    anyBack=true;
+  });
+  // Immediately attempt assignment for returned patients — don't wait for next tick
+  if(anyBack){refreshStats();tryAssign();}
+}
+
+function checkDischarge(){
+  patients.filter(p=>p.state==='treating'&&p.treatEnd&&simTime>=p.treatEnd).forEach(pat=>{
+    const needsSurg=Math.random()<(pat.cat.surgP||0);
+    // When boarding pressure is high, clinicians push borderline admissions home
+    const boardingPressure=patients.filter(p=>p.state==='boarding').length;
+    const pressureDiscount=boardingPressure>10?0.25:boardingPressure>5?0.15:0;
+    const admits=!needsSurg&&Math.random()<Math.max(0,pat.cat.admitP*activeEffects.admitPMul-pressureDiscount);
+    if(needsSurg){
+      // surgical pathway — patient waits for theatre slot
+      if(theatreSlots>0){
+        theatreSlots--;
+        pat.state='theatre';
+        pat.el.classList.add('theatre');
+        const slot=patients.filter(p=>p.state==='theatre').length;
+        mv(pat.el,ptInZone('theatre',slot).x,ptInZone('theatre',slot).y);
+        pat.el.style.background='#7F77DD';
+        pat.theatreEnd=simTime+120+Math.random()*240; // 2-6 hr wait for slot
+        freeProvider(pat);
+        totalCost+=800; // emergency theatre premium
+        addLog(`#${pat.id} listed for surgery — fasting, awaiting theatre slot`);
+      }else{
+        // no theatre slot — boards in dept
+        pat.state='boarding';pat.boarding=true;
+        pat.el.classList.add('boarding');
+        const slot=patients.filter(p=>p.state==='boarding').length;
+        mv(pat.el,ptInZone('boarding',slot).x,ptInZone('boarding',slot).y);
+        pat.el.style.background='#C4956A';
+        pat.el.style.boxShadow='0 0 0 2px #A0724A';
+        freeProvider(pat);
+        totalCost+=400;
+        addLog(`NO THEATRE SLOT — #${pat.id} waiting in dept`);
+      }
+    }else if(admits){
+      if(wardBedsFree>0){
+        wardBedsFree--;
+        pat.el.dataset.dest='ward';dischargePatient(pat,'ward','#378ADD');
+        addLog(`#${pat.id} admitted to ward`);
+      }else{
+        pat.state='boarding';pat.boarding=true;
+        pat.el.classList.add('boarding');
+        const slot=patients.filter(p=>p.state==='boarding').length;
+        mv(pat.el,ptInZone('boarding',slot).x,ptInZone('boarding',slot).y);
+        pat.el.style.background='#C4956A';
+        pat.el.style.boxShadow='0 0 0 2px #A0724A';
+        freeProvider(pat);
+        totalCost+=400;
+        addLog(`NO BED — #${pat.id} boarding! Costs rising.`);
+      }
+    }else{
+      pat.el.dataset.dest='home';dischargePatient(pat,'home','#888');
+    }
+    refreshStats();
+  });
+  // theatre patients go to theatre when slot ready
+  patients.filter(p=>p.state==='theatre'&&simTime>=p.theatreEnd).forEach(pat=>{
+    pat.state='discharged';
+    theatreSlots=Math.min(theatreSlots+1,3);
+    totalDisc++;totalWait+=Math.max(0,pat.waitMins);
+    const t=simTime-pat.arrivedAt;
+    if(t<=240)within4++;
+    if(t>720){breaches12++;totalCost+=2500;}
+    pat.el.style.display='none'; // hide — discharge counter tracks total
+    pat.el.classList.remove('theatre');
+    addLog(`#${pat.id} taken to theatre`);
+    refreshStats();
+  });
+  // occasionally a ward bed frees up
+  if(Math.random()<0.003*cfg.bed){
+    wardBedsFree=Math.min(effectiveBeds(),wardBedsFree+1);
+    const boarder=patients.find(p=>p.state==='boarding');
+    if(boarder){
+      wardBedsFree--;
+      boarder.state='discharged';boarder.boarding=false;
+      boarder.el.classList.remove('boarding');
+      totalDisc++;totalWait+=Math.max(0,boarder.waitMins);
+      const t=simTime-boarder.arrivedAt;
+      if(t<=240)within4++;else if(t>720)breaches12++;
+      const slot=patients.filter(p=>p.state==='discharged').length%12;
+      mv(boarder.el,ptInZone('discharge',slot).x,ptInZone('discharge',slot).y);
+      boarder.el.style.background='#378ADD';boarder.el.style.opacity='0.5';
+      addLog(`Bed freed — boarder #${boarder.id} moved to ward`);
+      refreshStats();
+    }
+  }
+  // check near-breaches (>10hr)
+  patients.filter(p=>!['discharged','boarding'].includes(p.state)).forEach(pat=>{
+    const waited=simTime-pat.arrivedAt;
+    if(waited>600)pat.el.classList.add('stale');
+  });
+}
+
+function dischargePatient(pat,dest,col){
+  pat.state='discharged';
+  totalDisc++;totalWait+=Math.max(0,pat.waitMins);
+  const t=simTime-pat.arrivedAt;
+  if(t<=240)within4++;
+  if(t>720){breaches12++;totalCost+=2500;}
+  // Hide dot — discharge zone shows a number counter instead
+  pat.el.style.display='none';
+  freeProvider(pat);
+}
+
+function freeProvider(pat){
+  staff.forEach(s=>{
+    if(s.patients){const i=s.patients.indexOf(pat.id);if(i>-1)s.patients.splice(i,1);}
+    else if(s.pid===pat.id){s.busy=false;s.pid=null;}
+  });
+}
+
+function checkShiftHandover(){
+  const h=Math.floor((8+simTime/60))%24;
+  const simMinInHour=simTime%60;
+  if((h===16||h===0||h===8)&&simMinInHour<(1.5/SPT*60)&&!shiftHandover){
+    shiftHandover=true;shiftHandoverEnd=simTime+activeEffects.handoverMins;
+    document.getElementById('shift-alert').style.display='block';
+    addLog(`Shift handover ${h}:00 — new team briefing, throughput paused`);
+    // re-roll absences for new shift
+    staff.forEach(s=>{
+      const nowAbsent=Math.random()<(cfg.abs/100);
+      s.absent=nowAbsent;
+      if(nowAbsent)s.el.classList.add('absent');
+      else s.el.classList.remove('absent');
+    });
+  }
+  if(shiftHandover&&simTime>=shiftHandoverEnd){
+    shiftHandover=false;
+    document.getElementById('shift-alert').style.display='none';
+  document.getElementById('btn-baseline').style.display='none';
+  const dc=document.getElementById('disc-counter');if(dc)dc.innerHTML='';
+  }
+}
+
+// boarding cost per tick
+function accrueBoarding(){
+  const boarders=patients.filter(p=>p.state==='boarding').length;
+  totalCost+=boarders*0.28*activeEffects.boardingCostMul;
+  const theatrePts=patients.filter(p=>p.state==='theatre').length;
+  totalCost+=theatrePts*0.55; // emergency theatre overhead ~£800/day
+  const absentCount=staff.filter(s=>s.absent).length;
+  totalCost+=absentCount*0.22;
+}
+
+let chartSampleT=0;
+function sampleChart(){
+  if(simTime-chartSampleT<30)return;
+  chartSampleT=simTime;
+  const h=Math.floor((8+simTime/60))%24,m=Math.floor((simTime%60));
+  chartData.labels.push(`${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}`);
+  chartData.waiting.push(patients.filter(p=>['waiting','triaged','triage'].includes(p.state)).length);
+  chartData.boarding.push(patients.filter(p=>p.state==='boarding').length);
+  chartData.inv.push(patients.filter(p=>p.state==='investigations').length);
+  drawChart();
+}
+
+function drawChart(){
+  const W=chartCanvas.width=chartCanvas.offsetWidth;
+  const H=chartCanvas.height=chartCanvas.offsetHeight;
+  ctx.clearRect(0,0,W,H);
+  const n=chartData.waiting.length;if(n<2)return;
+  const maxV=Math.max(1,...chartData.waiting,...chartData.boarding,...chartData.inv);
+  function drawLine(arr,color){
+    ctx.beginPath();ctx.strokeStyle=color;ctx.lineWidth=1.5;
+    arr.forEach((v,i)=>{
+      const x=i/(n-1)*(W-10)+5;
+      const y=H-4-(v/maxV)*(H-8);
+      i===0?ctx.moveTo(x,y):ctx.lineTo(x,y);
+    });
+    ctx.stroke();
+  }
+  drawLine(chartData.waiting,'#EF9F27');
+  drawLine(chartData.boarding,'#E24B4A');
+  drawLine(chartData.inv,'#378ADD');
+}
+
+function refreshStats(){
+  document.getElementById('s-wait').textContent=patients.filter(p=>['waiting','triaged','triage','reception'].includes(p.state)).length;
+  document.getElementById('s-inv').textContent=patients.filter(p=>p.state==='investigations').length;
+  document.getElementById('s-treat').textContent=patients.filter(p=>p.state==='treating').length;
+  document.getElementById('s-board').textContent=patients.filter(p=>p.state==='boarding').length;
+  document.getElementById('s-thtr').textContent=patients.filter(p=>p.state==='theatre').length;
+  document.getElementById('s-disc').textContent=totalDisc;
+  document.getElementById('s-breach').textContent=breaches12;
+  const pct=totalDisc>0?Math.round(within4/totalDisc*100):null;
+  document.getElementById('k-4hr').textContent=pct!=null?pct+'%':'—';
+  if(pct!=null){const b=document.getElementById('tgt-bar');b.style.width=pct+'%';b.style.background=pct>=95?'#1D9E75':pct>=75?'#EF9F27':'#E24B4A';}
+  // Only count patients who arrived after sim start for door-to-treatment avg
+  const realDisc=patients.filter(p=>p.state==='discharged'&&p.arrivedAt>=0);
+  const realWait=realDisc.reduce((s,p)=>s+Math.max(0,p.waitMins),0);
+  document.getElementById('k-dtt').textContent=realDisc.length>0?Math.round(realWait/realDisc.length)+' min':'—';
+  const socBlocked=Math.floor(cfg.bed*(cfg.soc/100));
+  document.getElementById('k-beds').textContent=`${wardBedsFree} free / ${cfg.bed} total (${socBlocked} social care blocked)`;
+  document.getElementById('k-cost').textContent='£'+Math.round(totalCost).toLocaleString();
+  renderWard();
+  renderDischargeCount();
+  // Belt-and-braces: ensure all discharged patient dots are hidden
+  patients.filter(p=>p.state==='discharged').forEach(p=>{p.el.style.display='none';});
+}
+
+function renderDischargeCount(){
+  // Show discharge total as large number in the discharge zone
+  let el=document.getElementById('disc-counter');
+  if(!el){
+    el=document.createElement('div');
+    el.id='disc-counter';
+    el.style.cssText='position:absolute;font-size:11px;font-weight:700;color:#555;pointer-events:none;text-align:center;width:100%';
+    floor.appendChild(el);
+  }
+  const z=ZM['discharge'];
+  if(!z){return;}
+  const home=patients.filter(p=>p.state==='discharged'&&p.el.dataset.dest==='home').length;
+  const ward=patients.filter(p=>p.state==='discharged'&&p.el.dataset.dest==='ward').length;
+  const disc=totalDisc;
+  el.style.left=sx(z.x)+'px';
+  el.style.top=(sy(z.y)+14)+'px';
+  el.style.width=sx(z.w)+'px';
+  el.innerHTML=`<span style="font-size:22px;color:#1D9E75;display:block">${disc}</span>`+
+    `<span style="font-size:9px;color:#888">discharged</span><br>`+
+    `<span style="font-size:9px;color:#378ADD">🏥 ${ward} admitted</span> `+
+    `<span style="font-size:9px;color:#888">🏠 ${home||disc-ward} home</span>`;
+}
+
+function renderWard(){
+  // Remove old ward dots
+  floor.querySelectorAll('.wdot').forEach(e=>e.remove());
+  const z=ZM['ward'];
+  if(!z)return;
+  const totalBeds=cfg.bed;
+  const socBlocked=Math.floor(cfg.bed*(cfg.soc/100));
+  const boarders=patients.filter(p=>p.state==='boarding').length;
+  const cols=Math.max(1,Math.floor(sx(z.w)/14));
+  let slot=0;
+  // Draw each bed as a dot
+  const otherOccupied=Math.max(0,totalBeds-socBlocked-boarders-wardBedsFree);
+  for(let i=0;i<totalBeds;i++){
+    const r=Math.floor(slot/cols),c=slot%cols;
+    const x=sx(z.x)+5+c*13, y=sy(z.y)+14+r*13;
+    const d=document.createElement('div');
+    d.className='dot wdot';
+    d.style.left=x+'px'; d.style.top=y+'px';
+    if(i<socBlocked){
+      d.style.background='#bbb';
+      d.style.opacity='0.7';
+      d.title='Social care blocked — patient medically fit but no care package';
+    } else if(i<socBlocked+boarders){
+      d.style.background='#E24B4A';
+      d.title='Boarder from A&E occupying ward bed';
+    } else if(i<socBlocked+boarders+otherOccupied){
+      d.style.background='#378ADD';
+      d.style.opacity='0.5';
+      d.title='Ward patient';
+    } else {
+      d.style.background='#1D9E75';
+      d.style.opacity='0.5';
+      d.title='Free bed';
+    }
+    floor.appendChild(d);
+    slot++;
+  }
+}
+
+function addLog(m){logs.unshift(m);if(logs.length>3)logs.pop();document.getElementById('log').textContent=logs[0]||'';}
+
+function debugState(){
+  const states={};
+  patients.forEach(p=>{states[p.state]=(states[p.state]||0)+1;});
+  
+  // Check for stuck patients
+  const stuck=patients.filter(p=>p.state==='treating'&&p.treatEnd&&simTime>p.treatEnd+30);
+  const stuckInv=patients.filter(p=>p.state==='investigations'&&p.invEnd&&simTime>p.invEnd+30);
+  const noTreatEnd=patients.filter(p=>p.state==='treating'&&!p.treatEnd&&!p.cat.needsInv);
+  
+  // Check provider capacity
+  const provInfo=staff.filter(s=>s.type==='doc'||s.type==='con'||s.type==='fy1').map(s=>{
+    const active=s.patients?s.patients.filter(id=>patients.find(p=>p.id===id&&p.state==='treating')).length:0;
+    const total=s.patients?s.patients.length:0;
+    return `${s.id}:active=${active}/total=${total}/absent=${s.absent}`;
+  });
+
+  console.group('=== DEBUG at simTime='+Math.round(simTime)+'min ===');
+  console.log('Patient states:', JSON.stringify(states));
+  console.log('Total patients:', patients.length);
+  console.log('Stuck in treating (treatEnd passed >30min ago):', stuck.length, stuck.map(p=>`#${p.id}(${p.cat.name})`));
+  console.log('Stuck in investigations (invEnd passed >30min ago):', stuckInv.length, stuckInv.map(p=>`#${p.id}(${p.cat.name})`));
+  console.log('Treating with no treatEnd and no inv:', noTreatEnd.length, noTreatEnd.map(p=>`#${p.id}(${p.cat.name})`));
+  console.log('Provider loads:', provInfo);
+  console.log('wardBedsFree:', wardBedsFree, 'theatreSlots:', theatreSlots);
+  console.groupEnd();
+  
+  // Show summary in log
+  addLog(`DEBUG: ${patients.length} pts — stuck:${stuck.length+stuckInv.length} noEnd:${noTreatEnd.length} providers:[${provInfo.join(' ')}]`);
+}
+
+function updateCtrl(k,v){
+  cfg[k]=+v;
+  document.getElementById('v-'+k).textContent=v;
+  if(k==='bed')wardBedsFree=Math.min(wardBedsFree+1,effectiveBeds());
+  if(['doc','con','fy1','b7','b5','hca'].includes(k))buildStaff();
+}
+
+function updateSeason(s){
+  // kept for compatibility but season is now set via applyScenario
+  season=s;
+}
+
+let currentScenario='normal';
+function applyScenario(s){
+  currentScenario=s;
+  // Clear baseline when switching scenario
+  totalCostBaseline=0;avgWaitBaseline=0;baselineBreaches=0;baseline4hr=0;baselineBoarding=0;
+  const bb=document.getElementById('baseline-banner');if(bb)bb.style.display='none';
+  const ir=document.getElementById('inv-result');if(ir)ir.style.display='none';
+  const c=SCENARIOS[s]||SCENARIOS.normal;
+  // Apply all keys from scenario JSON to cfg and sliders
+  Object.keys(c).forEach(k=>{
+    if(k==='label'||k==='description'||k==='season'||k==='effects')return;
+    cfg[k]=c[k];
+    const sl=document.getElementById('sl-'+k);
+    const vl=document.getElementById('v-'+k);
+    if(sl)sl.value=c[k];
+    if(vl)vl.textContent=c[k];
+  });
+  season=c.season;
+  applyEffects();
+  // Highlight active scenario button
+  document.querySelectorAll('[data-scenario]').forEach(b=>b.classList.remove('scen-active'));
+  const ab=document.querySelector(`[data-scenario="${s}"]`);
+  if(ab)ab.classList.add('scen-active');
+  // Update season label in clock
+  document.getElementById('season-label').textContent=c.season.charAt(0).toUpperCase()+c.season.slice(1);
+  resetSim();
+}
+
+let lastT=0;
+function tick(){
+  simTime+=SPT;tickCount++;
+  if(simTime>=SIM_DUR){stopSim();return;}
+  checkShiftHandover();
+  const mul=HOURLY[Math.floor((8+simTime/60))%24];
+  arrAcc+=cfg.arr*mul*SPT/60;
+  while(arrAcc>=1){spawnWalk();arrAcc-=1;}
+  ambAcc+=cfg.amb*mul*SPT/60;
+  while(ambAcc>=1){spawnAmb();ambAcc-=1;}
+  checkResultsBack();
+  checkDischarge();
+  completeTriage();
+  tryTriage();
+  if(tickCount%2===0)tryAssign(); // every 2 ticks — catches all queues
+  accrueBoarding();
+  sampleChart();
+  const pct=simTime/SIM_DUR*100;
+  document.getElementById('tbar-f').style.width=pct+'%';
+  const th=8+simTime/60,h=Math.floor(th)%24,m=Math.floor((th%1)*60);
+  const shift=h>=8&&h<16?'Day shift':h>=16&&h<24?'Evening shift':'Night shift';
+  const seasonCap=season.charAt(0).toUpperCase()+season.slice(1);
+  document.getElementById('clock').textContent=`${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')} — ${shift} (${seasonCap})`;
+  if(tickCount%10===0){
+    refreshStats();
+    ['waiting','resus','majors','minors','invest','boarding','discharge'].forEach(repackZone);
+  }
+  if(tickCount%15===0) driftNurses();
+}
+
+function driftNurses(){
+  function driftInZone(s, zid, stepSize){
+    const z=ZM[zid];if(!z)return;
+    const cx=parseFloat(s.el.style.left)||sx(z.x)+20;
+    const cy=parseFloat(s.el.style.top)||sy(z.y)+20;
+    // Tight padding — keep well inside zone border
+    const pad=18;
+    const minX=sx(z.x)+pad;
+    const maxX=sx(z.x)+sx(z.w)-pad-15;
+    const minY=sy(z.y)+pad;
+    const maxY=sy(z.y)+sy(z.h)-pad-15;
+    // Only drift if zone has enough room
+    if(maxX<=minX||maxY<=minY)return;
+    const step=stepSize*(0.5+Math.random());
+    const angle=Math.random()*Math.PI*2;
+    const nx=Math.max(minX,Math.min(maxX,cx+Math.cos(angle)*step));
+    const ny=Math.max(minY,Math.min(maxY,cy+Math.sin(angle)*step));
+    mv(s.el,nx,ny);
+  }
+  staff.filter(s=>s.type==='b5'&&!s.absent).forEach(s=>driftInZone(s,s.zone,10));
+  staff.filter(s=>s.type==='hca'&&!s.absent).forEach(s=>driftInZone(s,s.zone||'majors',8));
+}
+
+// Sim state: 'idle' | 'running' | 'paused' | 'done'
+let simState='idle';
+
+function handleBtn(){
+  if(simState==='idle'){startSim();}
+  else if(simState==='running'){pauseSim();}
+  else if(simState==='paused'){resumeSim();}
+  else if(simState==='done'){resetSim();startSim();}
+}
+
+function setBtnLabel(){
+  const labels={idle:'▶ Start',running:'⏸ Pause',paused:'▶ Resume',done:'↺ Restart'};
+  document.getElementById('btn').textContent=labels[simState]||'Start';
+}
+
+function startSim(){
+  if(simState==='idle'&&simTime===0)resetSim();
+  simState='running';setBtnLabel();
+  running=true;
+  iid=setInterval(tick,TICK);
+}
+
+function pauseSim(){
+  running=false;clearInterval(iid);
+  simState='paused';setBtnLabel();
+}
+
+function resumeSim(){
+  simState='running';setBtnLabel();
+  running=true;
+  iid=setInterval(tick,TICK);
+}
+
+function stopSim(){
+  running=false;clearInterval(iid);
+  const done=simTime>=SIM_DUR;
+  simState=done?'done':'paused';
+  setBtnLabel();
+  if(done){
+    document.getElementById('btn-baseline').style.display='inline-block';
+    if(activeInterventions.size>0) showInterventionResult();
+  }
+}
+
+function setBaseline(){
+  totalCostBaseline=totalCost;
+  avgWaitBaseline=totalDisc>0?Math.round(totalWait/totalDisc):0;
+  baselineBreaches=breaches12;
+  baseline4hr=totalDisc>0?Math.round(within4/totalDisc*100):0;
+  baselineBoarding=patients.filter(p=>p.state==='boarding').length;
+  // Show baseline banner
+  const el=document.getElementById('baseline-banner');
+  if(el){
+    el.style.display='block';
+    el.innerHTML=`<strong>📌 Baseline set</strong> — Cost: £${totalCostBaseline.toLocaleString()} · 4hr: ${baseline4hr}% · Avg wait: ${avgWaitBaseline} min · Breaches: ${baselineBreaches} · Boarding: ${baselineBoarding} — now tick interventions and run again`;
+  }
+  document.getElementById('btn-baseline').style.display='none';
+}
+
+function showInterventionResult(){
+  const el=document.getElementById('inv-result');
+  if(!el)return;
+  const baseCost=totalCostBaseline||0;
+  const costDelta=baseCost>0?baseCost-totalCost:0; // positive=saved, negative=worse
+  const savedCost=costDelta; // show actual delta, not clamped
+  const baseWait=avgWaitBaseline||0;
+  const curWaitVal=totalDisc>0?Math.round(totalWait/totalDisc):0;
+  const savedWait=baseWait>0?baseWait-curWaitVal:0;
+  const invCost=Array.from(activeInterventions).reduce((s,id)=>{
+    const inv=INTERVENTIONS.find(i=>i.id===id);return s+(inv?inv.cost:0);
+  },0);
+  el.style.display='block';
+  const cur4hr=totalDisc>0?Math.round(within4/totalDisc*100):0;
+  const curWait=totalDisc>0?Math.round(totalWait/totalDisc):0;
+  const curBoarding=patients.filter(p=>p.state==='boarding').length;
+  const hasBaseline=totalCostBaseline>0;
+  el.innerHTML=`
+    <div style="font-weight:700;font-size:11px;color:#1D9E75;margin-bottom:8px">⚡ Intervention impact${hasBaseline?' vs baseline':''}</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:6px;margin-bottom:8px">
+      <div style="background:#fff;border-radius:6px;padding:6px;text-align:center;border:1px solid #e0f0e8">
+        <div style="font-size:16px;font-weight:700;color:${savedCost>0?'#1D9E75':savedCost<0?'#E24B4A':'#888'}">${baseCost>0?(savedCost>=0?'−£':'＋£')+Math.abs(Math.round(savedCost)).toLocaleString():'—'}</div>
+        <div style="font-size:8px;color:#888">${savedCost>=0?'cost saved':'extra cost'}/day</div>
+        ${hasBaseline?`<div style="font-size:8px;color:#aaa">was £${baseCost.toLocaleString()}</div>`:''}
+      </div>
+      <div style="background:#fff;border-radius:6px;padding:6px;text-align:center;border:1px solid #e0f0e8">
+        <div style="font-size:16px;font-weight:700;color:${savedWait>0?'#1D9E75':savedWait<0?'#E24B4A':'#888'}">${baseWait>0?(savedWait>=0?'−':'+')+(Math.abs(savedWait))+' min':'—'}</div>
+        <div style="font-size:8px;color:#888">avg wait change</div>
+        ${hasBaseline?`<div style="font-size:8px;color:#aaa">was ${baseWait} min</div>`:''}
+      </div>
+      <div style="background:#fff;border-radius:6px;padding:6px;text-align:center;border:1px solid #e0f0e8">
+        <div style="font-size:16px;font-weight:700;color:${hasBaseline&&cur4hr>baseline4hr?'#1D9E75':'#888'}">${hasBaseline?'+'+(cur4hr-baseline4hr)+'%':cur4hr+'%'}</div>
+        <div style="font-size:8px;color:#888">4hr target</div>
+        ${hasBaseline?`<div style="font-size:8px;color:#aaa">was ${baseline4hr}%</div>`:''}
+      </div>
+      <div style="background:#fff;border-radius:6px;padding:6px;text-align:center;border:1px solid #e0f0e8">
+        <div style="font-size:16px;font-weight:700;color:${hasBaseline&&curBoarding<baselineBoarding?'#1D9E75':'#888'}">${hasBaseline?(curBoarding-baselineBoarding):curBoarding}</div>
+        <div style="font-size:8px;color:#888">boarders</div>
+        ${hasBaseline?`<div style="font-size:8px;color:#aaa">was ${baselineBoarding}</div>`:''}
+      </div>
+    </div>
+    <div style="font-size:9px;color:#666">
+      📋 Annual intervention cost: <strong>£${invCost.toLocaleString()}</strong>
+      ${savedCost>0&&invCost>0?` · Payback: <strong style="color:#1D9E75">~${Math.round(invCost/(Math.max(1,savedCost)*365))} months</strong>`:savedCost<=0&&invCost>0?' · <span style="color:#E24B4A">No cost saving this run</span>':''}
+    </div>`;
+}
+
+
+
+
+function resetSim(){
+  simTime=0;arrAcc=0;ambAcc=0;tickCount=0;chartSampleT=0;
+  totalDisc=0;totalWait=0;within4=0;breaches12=0;totalCost=0;
+  // Preserve baseline across resets so comparison works after reset+re-run
+  shiftHandover=false;logs=[];nid=1;
+  running=false;clearInterval(iid);
+  simState='idle';setBtnLabel();
+  patients.forEach(p=>{p.el&&p.el.remove();});patients=[];
+  chartData={waiting:[],boarding:[],inv:[],labels:[]};
+  ctx.clearRect(0,0,chartCanvas.width,chartCanvas.height);
+  document.getElementById('tbar-f').style.width='0%';
+  document.getElementById('shift-alert').style.display='none';
+  document.getElementById('btn-baseline').style.display='none';
+  const dc=document.getElementById('disc-counter');if(dc)dc.innerHTML='';
+  wardBedsFree=effectiveBeds();
+  buildStaff();
+  prePopulate();
+  refreshStats();
+}
+window.addEventListener('resize',()=>{renderZones();buildStaff();});
+renderZones();
+resetSim();
+
+
+
+function renderInterventionCards(){
+  const container=document.getElementById('inv-cards');
+  if(!container)return;
+  container.innerHTML='';
+  INTERVENTIONS.forEach(inv=>{
+    const active=activeInterventions.has(inv.id);
+    const card=document.createElement('div');
+    card.style.cssText=`cursor:pointer;padding:5px 8px;border-radius:6px;border:1.5px solid ${active?'#4B46A0':'#c8c8d8'};background:${active?'#EEEDFE':'#fafaf8'};font-size:9px;color:${active?'#3B3190':'#555'};transition:all 0.15s;max-width:140px`;
+    card.title=inv.detail;
+    card.innerHTML=`<div style="font-weight:700;font-size:10px;margin-bottom:2px">${inv.icon} ${inv.label}</div>`+
+      `<div style="color:#888;font-size:8px;margin-bottom:3px;line-height:1.3">${inv.tagline}</div>`+
+      `<div style="color:${active?'#4B46A0':'#aaa'};font-size:8px">£${inv.cost.toLocaleString()}/yr ${active?'✓ ON':'○ OFF'}</div>`;
+    card.onclick=()=>{
+      if(activeInterventions.has(inv.id)) activeInterventions.delete(inv.id);
+      else activeInterventions.add(inv.id);
+      applyEffects();
+      renderInterventionCards();
+      // Reset result panel when interventions change
+      const r=document.getElementById('inv-result');if(r)r.style.display='none';
+    };
+    container.appendChild(card);
+  });
+}
+
+renderInterventionCards();
+
+function openHelp(){
+  let html='';
+  Object.values(HELP).forEach(d=>{
+    html+=`<div class="modal-section"><div class="modal-section-title">${d.title}</div><p>${d.text}</p></div>`;
+  });
+  document.getElementById('help-body').innerHTML=html;
+  document.getElementById('modal-help').classList.add('open');
+}
+
+function openData(){
+  let html='';
+  Object.values(DATA).forEach(d=>{
+    html+=`<div class="modal-section"><div class="modal-section-title">${d.title}</div><div>`;
+    d.rows.forEach(r=>{
+      html+=`<div class="data-row"><span class="data-key">${r.k}</span><span class="data-val ${r.c||''}">${r.v}</span></div>`;
+    });
+    html+=`</div><p class="source">Source: ${d.source}</p></div>`;
+  });
+  document.getElementById('data-body').innerHTML=html;
+  document.getElementById('modal-data').classList.add('open');
+}
+
+document.addEventListener('keydown',e=>{
+  if(e.key==='Escape'){
+    document.getElementById('modal-help').classList.remove('open');
+    document.getElementById('modal-data').classList.remove('open');
+    document.getElementById('modal-zone').classList.remove('open');
+    document.getElementById('modal-logic').classList.remove('open');
+    document.getElementById('modal-effects').classList.remove('open');
+
+  }
+  if(e.key===' '&&e.target.tagName!=='INPUT'&&e.target.tagName!=='SELECT'){
+    e.preventDefault();
+    handleBtn();
+  }
+});
+
+
+function openEffects(){
+  let html='';
+  EFFECTS_DATA.forEach(group=>{
+    html+=`<div class="modal-section">
+      <div class="modal-section-title" style="color:#B03030;font-size:12px;text-transform:uppercase;letter-spacing:0.5px">${group.group}</div>`;
+    group.items.forEach(item=>{
+      html+=`<div style="margin-bottom:12px;padding:8px;background:#fafaf8;border-radius:6px;border:1px solid #eee">
+        <div style="font-weight:700;font-size:10px;color:#333;margin-bottom:4px">${item.label} <span style="font-weight:400;color:#888;font-size:9px">— ${item.effect}</span></div>
+        <div style="font-size:9px;color:#555;margin-bottom:3px"><strong>Current value:</strong> ${item.current}</div>
+        <div style="font-size:9px;color:#555;margin-bottom:3px"><strong>What it affects:</strong> ${item.affects}</div>
+        <div style="font-size:9px;color:#666;margin-bottom:3px"><strong>What changes it:</strong> ${item.levers}</div>
+        <div style="font-size:9px;color:#999"><strong>Range:</strong> ${item.range}</div>
+      </div>`;
+    });
+    html+=`</div>`;
+  });
+  document.getElementById('effects-body').innerHTML=html;
+  document.getElementById('modal-effects').classList.add('open');
+}
+
+
+function openLogic(){
+  let html='';
+  LOGIC_ENTRIES.forEach(e=>{
+    html+=`<div class="modal-section">
+      <div class="modal-section-title" style="color:#4B46A0">${e.title}</div>
+      <p style="font-size:10px;line-height:1.6;color:#444">${e.body}</p>
+    </div>`;
+  });
+  document.getElementById('logic-body').innerHTML=html;
+  document.getElementById('modal-logic').classList.add('open');
+}
+
+
+function openZones(){
+  let html='';
+  ZONE_INFO.forEach(z=>{
+    html+=`<div class="modal-section">
+      <div class="modal-section-title" style="color:${z.color}">${z.label}</div>
+      <p><strong style="font-size:10px;color:#555">Who is here:</strong> ${z.who}</p>
+      <p><strong style="font-size:10px;color:#555">What happens:</strong> ${z.what}</p>
+      <p><strong style="font-size:10px;color:#555">Main bottleneck:</strong> ${z.bottleneck}</p>
+      <p style="font-size:9px;color:#aaa;font-style:italic">${z.nhs}</p>
+    </div>`;
+  });
+  document.getElementById('zone-body').innerHTML=html;
+  document.getElementById('modal-zone').classList.add('open');
+}
+</script>
+</body>
+</html>
